@@ -13,6 +13,7 @@ export interface RespondToSituationItemProps {
   prepTimeSeconds?: number;
   recordingSeconds?: number;
   onRecordingComplete: (audioBlob: Blob, transcript: string, durationSeconds: number) => void;
+  onTranscriptUpdate?: (transcript: string) => void;
 }
 
 export const RespondToSituationItem: React.FC<RespondToSituationItemProps> = ({
@@ -22,11 +23,13 @@ export const RespondToSituationItem: React.FC<RespondToSituationItemProps> = ({
   prepTimeSeconds = 25,
   recordingSeconds = 40,
   onRecordingComplete,
+  onTranscriptUpdate,
 }) => {
   const [isPlayingAudio, setIsPlayingAudio] = useState(true);
   const [status, setStatus] = useState<SpeakingState>('COUNTDOWN');
   const [secondsLeft, setSecondsLeft] = useState(prepTimeSeconds);
   const [volumeLevel, setVolumeLevel] = useState(0);
+  const [liveTranscript, setLiveTranscript] = useState('');
 
   const recorderRef = useRef<AudioRecorderEngine | null>(null);
   const speechRef = useRef<SpeechRecognitionService | null>(null);
@@ -65,6 +68,20 @@ export const RespondToSituationItem: React.FC<RespondToSituationItemProps> = ({
     setSecondsLeft(prepTimeSeconds);
   };
 
+  const handleSkipPrep = () => {
+    if (isPlayingAudio || status !== 'COUNTDOWN') return;
+    playCountdownBeep().then(() => {
+      setStatus('RECORDING');
+      setSecondsLeft(recordingSeconds);
+      startRecording();
+    });
+  };
+
+  const handleFinishRecording = () => {
+    if (status !== 'RECORDING') return;
+    finishRecording();
+  };
+
   useEffect(() => {
     if (isPlayingAudio) return;
 
@@ -73,11 +90,7 @@ export const RespondToSituationItem: React.FC<RespondToSituationItemProps> = ({
       if (secondsLeft > 0) {
         timer = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
       } else {
-        playCountdownBeep().then(() => {
-          setStatus('RECORDING');
-          setSecondsLeft(recordingSeconds);
-          startRecording();
-        });
+        handleSkipPrep();
       }
     } else if (status === 'RECORDING') {
       if (secondsLeft > 0) {
@@ -97,14 +110,21 @@ export const RespondToSituationItem: React.FC<RespondToSituationItemProps> = ({
     startTimeRef.current = Date.now();
 
     speechRef.current.start(
-      () => {},
-      () => {}
+      (interim) => {
+        setLiveTranscript(interim);
+        if (onTranscriptUpdate) onTranscriptUpdate(interim);
+      },
+      (finalText) => {
+        setLiveTranscript(finalText);
+        if (onTranscriptUpdate) onTranscriptUpdate(finalText);
+      }
     );
 
     try {
       await recorderRef.current.start(
         (vol) => setVolumeLevel(vol),
-        () => finishRecording()
+        () => finishRecording(),
+        false
       );
     } catch {
       // mic error
@@ -118,7 +138,7 @@ export const RespondToSituationItem: React.FC<RespondToSituationItemProps> = ({
 
     let transcript = '';
     if (speechRef.current) {
-      transcript = speechRef.current.stop();
+      transcript = speechRef.current.stop() || liveTranscript;
     }
     if (recorderRef.current) {
       const { blob } = await recorderRef.current.stop();
@@ -163,6 +183,8 @@ export const RespondToSituationItem: React.FC<RespondToSituationItemProps> = ({
         secondsLeft={isPlayingAudio ? 0 : secondsLeft}
         volumeLevel={volumeLevel}
         totalRecordingSeconds={recordingSeconds}
+        onSkipPrep={handleSkipPrep}
+        onFinishRecording={handleFinishRecording}
       />
     </div>
   );

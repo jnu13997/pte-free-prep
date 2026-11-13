@@ -11,6 +11,7 @@ export interface DescribeImageItemProps {
   prepTimeSeconds?: number;
   recordingSeconds?: number;
   onRecordingComplete: (audioBlob: Blob, transcript: string, durationSeconds: number) => void;
+  onTranscriptUpdate?: (transcript: string) => void;
 }
 
 export const DescribeImageItem: React.FC<DescribeImageItemProps> = ({
@@ -20,10 +21,12 @@ export const DescribeImageItem: React.FC<DescribeImageItemProps> = ({
   prepTimeSeconds = 25,
   recordingSeconds = 40,
   onRecordingComplete,
+  onTranscriptUpdate,
 }) => {
   const [status, setStatus] = useState<SpeakingState>('COUNTDOWN');
   const [secondsLeft, setSecondsLeft] = useState(prepTimeSeconds);
   const [volumeLevel, setVolumeLevel] = useState(0);
+  const [liveTranscript, setLiveTranscript] = useState('');
 
   const recorderRef = useRef<AudioRecorderEngine | null>(null);
   const speechRef = useRef<SpeechRecognitionService | null>(null);
@@ -35,11 +38,7 @@ export const DescribeImageItem: React.FC<DescribeImageItemProps> = ({
       if (secondsLeft > 0) {
         timer = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
       } else {
-        playCountdownBeep().then(() => {
-          setStatus('RECORDING');
-          setSecondsLeft(recordingSeconds);
-          startRecording();
-        });
+        handleSkipPrep();
       }
     } else if (status === 'RECORDING') {
       if (secondsLeft > 0) {
@@ -53,20 +52,41 @@ export const DescribeImageItem: React.FC<DescribeImageItemProps> = ({
     };
   }, [status, secondsLeft]);
 
+  const handleSkipPrep = () => {
+    if (status !== 'COUNTDOWN') return;
+    playCountdownBeep().then(() => {
+      setStatus('RECORDING');
+      setSecondsLeft(recordingSeconds);
+      startRecording();
+    });
+  };
+
+  const handleFinishRecording = () => {
+    if (status !== 'RECORDING') return;
+    finishRecording();
+  };
+
   const startRecording = async () => {
     recorderRef.current = new AudioRecorderEngine();
     speechRef.current = new SpeechRecognitionService();
     startTimeRef.current = Date.now();
 
     speechRef.current.start(
-      () => {},
-      () => {}
+      (interim) => {
+        setLiveTranscript(interim);
+        if (onTranscriptUpdate) onTranscriptUpdate(interim);
+      },
+      (finalText) => {
+        setLiveTranscript(finalText);
+        if (onTranscriptUpdate) onTranscriptUpdate(finalText);
+      }
     );
 
     try {
       await recorderRef.current.start(
         (vol) => setVolumeLevel(vol),
-        () => finishRecording()
+        () => finishRecording(),
+        false
       );
     } catch {
       // mic error
@@ -80,7 +100,7 @@ export const DescribeImageItem: React.FC<DescribeImageItemProps> = ({
 
     let transcript = '';
     if (speechRef.current) {
-      transcript = speechRef.current.stop();
+      transcript = speechRef.current.stop() || liveTranscript;
     }
     if (recorderRef.current) {
       const { blob } = await recorderRef.current.stop();
@@ -99,29 +119,16 @@ export const DescribeImageItem: React.FC<DescribeImageItemProps> = ({
 
       <div className="bg-white p-6 rounded border border-pearson-borderGray shadow-sm flex flex-col items-center justify-center min-h-[300px]">
         {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={imageAlt}
-            className="max-h-80 max-w-full object-contain rounded border border-gray-200 shadow-xs"
-          />
+          <img src={imageUrl} alt={imageAlt} className="max-h-72 max-w-full object-contain rounded" />
         ) : (
-          <div className="w-full max-w-md bg-gray-50 border border-gray-200 rounded p-6 text-center">
-            <h3 className="font-bold text-gray-700 mb-2">Annual Global Renewable Energy Adoption</h3>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex justify-between border-b pb-1">
-                <span>Solar PV (2020 - 2025):</span>
-                <span className="font-semibold text-pearson-blue">32% Increase</span>
-              </div>
-              <div className="flex justify-between border-b pb-1">
-                <span>Wind Power (2020 - 2025):</span>
-                <span className="font-semibold text-pearson-blue">24% Increase</span>
-              </div>
-              <div className="flex justify-between border-b pb-1">
-                <span>Hydroelectric:</span>
-                <span className="font-semibold text-gray-700">Stable at 45% Share</span>
-              </div>
+          <div className="w-full max-w-lg bg-gray-50 p-6 rounded border border-gray-200 text-center space-y-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">PTE Visual Data Representation</span>
+            <div className="text-sm font-semibold text-gray-700 bg-white p-4 rounded border border-gray-200 shadow-xs leading-relaxed">
+              {chartDescription || 'Provincial electricity generation by source in Canada: Hydroelectric 61%, Nuclear 15%, Wind & Solar 11%, Natural Gas 11%, Coal 2%.'}
             </div>
-            {chartDescription && <p className="text-xs text-gray-500 mt-3">{chartDescription}</p>}
+            <p className="text-xs text-gray-500">
+              Note trends, highest category, lowest category, and summarize in your response.
+            </p>
           </div>
         )}
       </div>
@@ -131,6 +138,8 @@ export const DescribeImageItem: React.FC<DescribeImageItemProps> = ({
         secondsLeft={secondsLeft}
         volumeLevel={volumeLevel}
         totalRecordingSeconds={recordingSeconds}
+        onSkipPrep={handleSkipPrep}
+        onFinishRecording={handleFinishRecording}
       />
     </div>
   );

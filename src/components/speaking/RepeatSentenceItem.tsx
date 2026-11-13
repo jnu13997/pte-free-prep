@@ -10,6 +10,7 @@ export interface RepeatSentenceItemProps {
   audioPromptUrl?: string;
   recordingSeconds?: number;
   onRecordingComplete: (audioBlob: Blob, transcript: string, durationSeconds: number) => void;
+  onTranscriptUpdate?: (transcript: string) => void;
 }
 
 export const RepeatSentenceItem: React.FC<RepeatSentenceItemProps> = ({
@@ -17,11 +18,13 @@ export const RepeatSentenceItem: React.FC<RepeatSentenceItemProps> = ({
   audioPromptUrl,
   recordingSeconds = 15,
   onRecordingComplete,
+  onTranscriptUpdate,
 }) => {
   const [isPlayingAudio, setIsPlayingAudio] = useState(true);
   const [status, setStatus] = useState<SpeakingState>('IDLE');
   const [secondsLeft, setSecondsLeft] = useState(recordingSeconds);
   const [volumeLevel, setVolumeLevel] = useState(0);
+  const [liveTranscript, setLiveTranscript] = useState('');
 
   const recorderRef = useRef<AudioRecorderEngine | null>(null);
   const speechRef = useRef<SpeechRecognitionService | null>(null);
@@ -67,14 +70,21 @@ export const RepeatSentenceItem: React.FC<RepeatSentenceItemProps> = ({
     startTimeRef.current = Date.now();
 
     speechRef.current.start(
-      () => {},
-      () => {}
+      (interim) => {
+        setLiveTranscript(interim);
+        if (onTranscriptUpdate) onTranscriptUpdate(interim);
+      },
+      (finalText) => {
+        setLiveTranscript(finalText);
+        if (onTranscriptUpdate) onTranscriptUpdate(finalText);
+      }
     );
 
     try {
       await recorderRef.current.start(
         (vol) => setVolumeLevel(vol),
-        () => finishRecording()
+        () => finishRecording(),
+        false
       );
     } catch {
       // mic error
@@ -95,6 +105,11 @@ export const RepeatSentenceItem: React.FC<RepeatSentenceItemProps> = ({
     };
   }, [status, secondsLeft]);
 
+  const handleFinishRecording = () => {
+    if (status !== 'RECORDING') return;
+    finishRecording();
+  };
+
   const finishRecording = async () => {
     if (status === 'COMPLETED') return;
     setStatus('COMPLETED');
@@ -102,7 +117,7 @@ export const RepeatSentenceItem: React.FC<RepeatSentenceItemProps> = ({
 
     let transcript = '';
     if (speechRef.current) {
-      transcript = speechRef.current.stop();
+      transcript = speechRef.current.stop() || liveTranscript;
     }
     if (recorderRef.current) {
       const { blob } = await recorderRef.current.stop();
@@ -116,26 +131,28 @@ export const RepeatSentenceItem: React.FC<RepeatSentenceItemProps> = ({
         <h2 className="text-base font-bold text-gray-800 mb-1">
           You will hear a sentence. Please repeat the sentence exactly as you hear it. You will hear the sentence only once.
         </h2>
+        <p className="text-xs text-gray-500">You will have {recordingSeconds} seconds to repeat.</p>
       </div>
 
-      <div className="bg-white p-8 rounded border border-pearson-borderGray shadow-sm flex flex-col items-center justify-center min-h-[160px]">
+      <div className="bg-white p-8 rounded border border-pearson-borderGray shadow-sm text-center min-h-[140px] flex flex-col items-center justify-center space-y-3">
         {isPlayingAudio ? (
-          <div className="flex items-center space-x-3 text-pearson-blue animate-pulse">
-            <Volume2 className="w-8 h-8" />
-            <span className="font-semibold text-lg">Listening to audio prompt...</span>
+          <div className="flex items-center space-x-3 text-pearson-blue font-semibold animate-pulse">
+            <Volume2 className="w-6 h-6 animate-bounce" />
+            <span className="text-base">Playing audio prompt... Listen carefully</span>
           </div>
         ) : (
-          <div className="text-center text-gray-600 font-medium">
-            Audio playback finished. Please repeat the sentence now.
+          <div className="text-gray-700 text-sm italic">
+            Audio prompt finished. Speak clearly into your microphone now.
           </div>
         )}
       </div>
 
       <SpeakingStatusBox
-        status={status}
+        status={isPlayingAudio ? 'IDLE' : status}
         secondsLeft={secondsLeft}
         volumeLevel={volumeLevel}
         totalRecordingSeconds={recordingSeconds}
+        onFinishRecording={handleFinishRecording}
       />
     </div>
   );

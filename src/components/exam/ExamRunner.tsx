@@ -1,29 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PteMode, QuestionItem, SectionType } from '../../types/exam';
-import { ExamSession, createExamSession, advanceQuestion, UserExamResponse } from '../../services/exam/examRunnerState';
+import {
+  ExamSession,
+  createExamSession,
+  advanceQuestion,
+  UserExamResponse,
+} from '../../services/exam/examRunnerState';
 import { PearsonHeader } from '../layout/PearsonHeader';
 import { PearsonFooter } from '../layout/PearsonFooter';
-
-// Speaking Components
 import { ReadAloudItem } from '../speaking/ReadAloudItem';
 import { RepeatSentenceItem } from '../speaking/RepeatSentenceItem';
 import { DescribeImageItem } from '../speaking/DescribeImageItem';
 import { RespondToSituationItem } from '../speaking/RespondToSituationItem';
 import { RetellLectureItem } from '../speaking/RetellLectureItem';
 import { AnswerShortQuestionItem } from '../speaking/AnswerShortQuestionItem';
-
-// Writing Components
 import { SummarizeWrittenTextItem } from '../writing/SummarizeWrittenTextItem';
 import { WriteEmailItem } from '../writing/WriteEmailItem';
 import { WriteEssayItem } from '../writing/WriteEssayItem';
-
-// Reading Components
 import { ReadingWritingBlanksItem } from '../reading/ReadingWritingBlanksItem';
 import { ReorderParagraphsItem } from '../reading/ReorderParagraphsItem';
 import { ReadingBlanksDragDropItem } from '../reading/ReadingBlanksDragDropItem';
 import { ReadingMcqItem } from '../reading/ReadingMcqItem';
-
-// Listening Components
 import { SummarizeSpokenTextItem } from '../listening/SummarizeSpokenTextItem';
 import { WriteFromDictationItem } from '../listening/WriteFromDictationItem';
 import { HighlightIncorrectWordsItem } from '../listening/HighlightIncorrectWordsItem';
@@ -47,12 +44,20 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
   const [currentResponse, setCurrentResponse] = useState<UserExamResponse>({ taskId: '' });
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
+  const currentResponseRef = useRef<UserExamResponse>(currentResponse);
+  useEffect(() => {
+    currentResponseRef.current = currentResponse;
+  }, [currentResponse]);
+
   const currentQ = session.questions[session.currentQuestionIndex];
+  const isDrill = session.questions.length === 1;
 
   // Reset or load response for current question
   useEffect(() => {
     if (currentQ) {
-      setCurrentResponse(session.responses[currentQ.id] || { taskId: currentQ.id });
+      const initial = session.responses[currentQ.id] || { taskId: currentQ.id };
+      setCurrentResponse(initial);
+      currentResponseRef.current = initial;
     }
   }, [session.currentQuestionIndex]);
 
@@ -60,11 +65,14 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
   useEffect(() => {
     if (session.isComplete) return;
 
+    // In single-question drill/practice mode, never prematurely kick the user out!
+    if (isDrill) return;
+
     const timer = setInterval(() => {
       setSession((prev) => {
         if (prev.timeRemainingSeconds <= 1) {
-          // Auto advance when timer runs out
-          return advanceQuestion(prev, currentResponse);
+          // Timer naturally expired: safely advance using latest response
+          return advanceQuestion(prev, currentResponseRef.current);
         }
         return {
           ...prev,
@@ -74,7 +82,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [session.currentQuestionIndex, session.isComplete, currentResponse]);
+  }, [session.currentQuestionIndex, session.isComplete, isDrill]);
 
   // Check if exam completed
   useEffect(() => {
@@ -95,7 +103,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
   }
 
   const handleNext = () => {
-    const updated = advanceQuestion(session, currentResponse);
+    const updated = advanceQuestion(session, currentResponseRef.current);
     setSession(updated);
   };
 
@@ -116,6 +124,20 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
         onExit={() => setShowExitConfirm(true)}
       />
 
+      {isDrill && (
+        <div className="bg-amber-50 border-b border-amber-200 px-6 py-2 text-xs text-amber-800 flex items-center justify-between">
+          <span className="font-semibold">
+            Single Question Practice Mode: You are in control. Record, speak, and click "Submit & Score Answer" when ready.
+          </span>
+          <button
+            onClick={onExit}
+            className="text-amber-900 underline hover:text-amber-700 font-bold ml-4 cursor-pointer"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      )}
+
       <main className="flex-1 p-6 overflow-y-auto">
         {/* Speaking Tasks */}
         {currentQ.type === 'PERSONAL_INTRODUCTION' && (
@@ -123,8 +145,17 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
             passageText={currentQ.promptText || ''}
             prepTimeSeconds={currentQ.prepTimeSeconds || 25}
             recordingSeconds={currentQ.durationSeconds || 30}
+            onTranscriptUpdate={(transcript) =>
+              setCurrentResponse((prev) => ({ ...prev, taskId: currentQ.id, transcript }))
+            }
             onRecordingComplete={(blob, transcript, duration) =>
-              setCurrentResponse({ taskId: currentQ.id, audioBlob: blob, transcript, durationSeconds: duration })
+              setCurrentResponse((prev) => ({
+                ...prev,
+                taskId: currentQ.id,
+                audioBlob: blob,
+                transcript,
+                durationSeconds: duration,
+              }))
             }
           />
         )}
@@ -134,8 +165,17 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
             passageText={currentQ.promptText || ''}
             prepTimeSeconds={currentQ.prepTimeSeconds || 35}
             recordingSeconds={currentQ.durationSeconds || 40}
+            onTranscriptUpdate={(transcript) =>
+              setCurrentResponse((prev) => ({ ...prev, taskId: currentQ.id, transcript }))
+            }
             onRecordingComplete={(blob, transcript, duration) =>
-              setCurrentResponse({ taskId: currentQ.id, audioBlob: blob, transcript, durationSeconds: duration })
+              setCurrentResponse((prev) => ({
+                ...prev,
+                taskId: currentQ.id,
+                audioBlob: blob,
+                transcript,
+                durationSeconds: duration,
+              }))
             }
           />
         )}
@@ -145,8 +185,17 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
             sentenceText={currentQ.promptText || ''}
             audioPromptUrl={currentQ.promptAudioUrl}
             recordingSeconds={currentQ.durationSeconds || 15}
+            onTranscriptUpdate={(transcript) =>
+              setCurrentResponse((prev) => ({ ...prev, taskId: currentQ.id, transcript }))
+            }
             onRecordingComplete={(blob, transcript, duration) =>
-              setCurrentResponse({ taskId: currentQ.id, audioBlob: blob, transcript, durationSeconds: duration })
+              setCurrentResponse((prev) => ({
+                ...prev,
+                taskId: currentQ.id,
+                audioBlob: blob,
+                transcript,
+                durationSeconds: duration,
+              }))
             }
           />
         )}
@@ -157,8 +206,17 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
             chartDescription={currentQ.chartDescription}
             prepTimeSeconds={currentQ.prepTimeSeconds || 25}
             recordingSeconds={currentQ.durationSeconds || 40}
+            onTranscriptUpdate={(transcript) =>
+              setCurrentResponse((prev) => ({ ...prev, taskId: currentQ.id, transcript }))
+            }
             onRecordingComplete={(blob, transcript, duration) =>
-              setCurrentResponse({ taskId: currentQ.id, audioBlob: blob, transcript, durationSeconds: duration })
+              setCurrentResponse((prev) => ({
+                ...prev,
+                taskId: currentQ.id,
+                audioBlob: blob,
+                transcript,
+                durationSeconds: duration,
+              }))
             }
           />
         )}
@@ -170,8 +228,17 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
             audioPromptUrl={currentQ.promptAudioUrl}
             prepTimeSeconds={currentQ.prepTimeSeconds || 25}
             recordingSeconds={currentQ.durationSeconds || 40}
+            onTranscriptUpdate={(transcript) =>
+              setCurrentResponse((prev) => ({ ...prev, taskId: currentQ.id, transcript }))
+            }
             onRecordingComplete={(blob, transcript, duration) =>
-              setCurrentResponse({ taskId: currentQ.id, audioBlob: blob, transcript, durationSeconds: duration })
+              setCurrentResponse((prev) => ({
+                ...prev,
+                taskId: currentQ.id,
+                audioBlob: blob,
+                transcript,
+                durationSeconds: duration,
+              }))
             }
           />
         )}
@@ -183,8 +250,17 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
             imageUrl={currentQ.imageUrl}
             prepTimeSeconds={currentQ.prepTimeSeconds || 10}
             recordingSeconds={currentQ.durationSeconds || 40}
+            onTranscriptUpdate={(transcript) =>
+              setCurrentResponse((prev) => ({ ...prev, taskId: currentQ.id, transcript }))
+            }
             onRecordingComplete={(blob, transcript, duration) =>
-              setCurrentResponse({ taskId: currentQ.id, audioBlob: blob, transcript, durationSeconds: duration })
+              setCurrentResponse((prev) => ({
+                ...prev,
+                taskId: currentQ.id,
+                audioBlob: blob,
+                transcript,
+                durationSeconds: duration,
+              }))
             }
           />
         )}
@@ -194,8 +270,17 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
             questionText={currentQ.promptText || ''}
             audioPromptUrl={currentQ.promptAudioUrl}
             recordingSeconds={currentQ.durationSeconds || 10}
+            onTranscriptUpdate={(transcript) =>
+              setCurrentResponse((prev) => ({ ...prev, taskId: currentQ.id, transcript }))
+            }
             onRecordingComplete={(blob, transcript, duration) =>
-              setCurrentResponse({ taskId: currentQ.id, audioBlob: blob, transcript, durationSeconds: duration })
+              setCurrentResponse((prev) => ({
+                ...prev,
+                taskId: currentQ.id,
+                audioBlob: blob,
+                transcript,
+                durationSeconds: duration,
+              }))
             }
           />
         )}
@@ -355,7 +440,13 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
       <PearsonFooter
         onNext={handleNext}
-        nextLabel={session.currentQuestionIndex === session.questions.length - 1 ? 'Submit Test' : 'Next'}
+        nextLabel={
+          isDrill
+            ? 'Submit & View Score'
+            : session.currentQuestionIndex === session.questions.length - 1
+            ? 'Submit Test'
+            : 'Next'
+        }
       />
 
       {/* Exit Confirmation Dialog */}
@@ -369,7 +460,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
             <div className="flex justify-end space-x-3 pt-2">
               <button
                 onClick={() => setShowExitConfirm(false)}
-                className="px-4 py-2 border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 text-gray-700"
+                className="px-4 py-2 border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 text-gray-700 cursor-pointer"
               >
                 Resume Test
               </button>
@@ -378,7 +469,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
                   setShowExitConfirm(false);
                   onExit();
                 }}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-semibold"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-semibold cursor-pointer"
               >
                 Exit Now
               </button>

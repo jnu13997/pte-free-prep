@@ -12,8 +12,9 @@ describe('SpeakingStatusBox', () => {
     rerender(
       <SpeakingStatusBox status="RECORDING" secondsLeft={30} volumeLevel={45} />
     );
-    expect(screen.getByText(/Recording/i)).toBeInTheDocument();
-    expect(screen.getByText(/30 seconds/i)).toBeInTheDocument();
+    const recordingElements = screen.getAllByText(/Recording/i);
+    expect(recordingElements.length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/30s remaining/i)).toBeInTheDocument();
   });
 
   it('renders completed state when recording finishes', () => {

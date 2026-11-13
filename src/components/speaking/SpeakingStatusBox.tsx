@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mic, CheckCircle2 } from 'lucide-react';
+import { Mic, CheckCircle2, Play, Check } from 'lucide-react';
 
 export type SpeakingState = 'IDLE' | 'COUNTDOWN' | 'RECORDING' | 'COMPLETED';
 
@@ -8,6 +8,8 @@ export interface SpeakingStatusBoxProps {
   secondsLeft: number;
   volumeLevel?: number; // 0 to 100
   totalRecordingSeconds?: number;
+  onSkipPrep?: () => void;
+  onFinishRecording?: () => void;
 }
 
 export const SpeakingStatusBox: React.FC<SpeakingStatusBoxProps> = ({
@@ -15,15 +17,17 @@ export const SpeakingStatusBox: React.FC<SpeakingStatusBoxProps> = ({
   secondsLeft,
   volumeLevel = 0,
   totalRecordingSeconds = 40,
+  onSkipPrep,
+  onFinishRecording,
 }) => {
   const getStatusText = () => {
     switch (status) {
       case 'COUNTDOWN':
         return `Beginning in ${secondsLeft} seconds`;
       case 'RECORDING':
-        return `Recording (${secondsLeft} seconds remaining)`;
+        return `Recording (${secondsLeft}s remaining)`;
       case 'COMPLETED':
-        return 'Completed';
+        return 'Recording Completed';
       case 'IDLE':
       default:
         return 'Ready';
@@ -48,8 +52,8 @@ export const SpeakingStatusBox: React.FC<SpeakingStatusBoxProps> = ({
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
             </span>
           )}
-          <span className="text-xs font-semibold text-gray-600">
-            {status === 'RECORDING' ? 'LIVE' : status}
+          <span className={`text-xs font-semibold ${status === 'RECORDING' ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
+            {status === 'RECORDING' ? 'RECORDING' : status}
           </span>
         </div>
       </div>
@@ -57,17 +61,44 @@ export const SpeakingStatusBox: React.FC<SpeakingStatusBoxProps> = ({
       <div className="p-4 space-y-3">
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-600 font-medium">Current status:</span>
-          <span
-            className={`font-bold ${
-              status === 'RECORDING'
-                ? 'text-pearson-blue'
-                : status === 'COMPLETED'
-                ? 'text-green-600'
-                : 'text-gray-800'
-            }`}
-          >
-            {getStatusText()}
-          </span>
+          <div className="flex items-center space-x-2">
+            <span
+              className={`font-bold ${
+                status === 'RECORDING'
+                  ? 'text-pearson-blue'
+                  : status === 'COMPLETED'
+                  ? 'text-green-600'
+                  : 'text-gray-800'
+              }`}
+            >
+              {getStatusText()}
+            </span>
+
+            {/* Quick action controls for candidate convenience */}
+            {status === 'COUNTDOWN' && onSkipPrep && (
+              <button
+                type="button"
+                onClick={onSkipPrep}
+                className="bg-pearson-blue hover:bg-[#005a9e] text-white text-xs px-2.5 py-1 rounded font-semibold transition-all flex items-center space-x-1 shadow-xs cursor-pointer"
+                title="Skip preparation and start speaking immediately"
+              >
+                <Play className="w-3 h-3 fill-current" />
+                <span>Speak Now</span>
+              </button>
+            )}
+
+            {status === 'RECORDING' && onFinishRecording && (
+              <button
+                type="button"
+                onClick={onFinishRecording}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1 rounded font-semibold transition-all flex items-center space-x-1 shadow-xs cursor-pointer animate-pulse"
+                title="Finish speaking and save response"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Finish Answer</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Progress Bar */}
@@ -93,7 +124,7 @@ export const SpeakingStatusBox: React.FC<SpeakingStatusBoxProps> = ({
           <div className="flex-1 bg-gray-100 h-2 rounded overflow-hidden">
             <div
               className={`h-full transition-all duration-75 ${
-                volumeLevel > 70 ? 'bg-red-500' : volumeLevel > 20 ? 'bg-green-500' : 'bg-gray-300'
+                volumeLevel > 70 ? 'bg-red-500' : volumeLevel > 15 ? 'bg-green-500' : 'bg-gray-300'
               }`}
               style={{ width: `${status === 'RECORDING' ? volumeLevel : 0}%` }}
             />
@@ -104,9 +135,11 @@ export const SpeakingStatusBox: React.FC<SpeakingStatusBoxProps> = ({
         </div>
 
         {status === 'COMPLETED' && (
-          <div className="flex items-center justify-center space-x-1.5 text-xs text-green-700 bg-green-50 border border-green-200 py-1.5 rounded">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Your response has been recorded. Click Next to proceed.</span>
+          <div className="flex items-center justify-between text-xs text-green-700 bg-green-50 border border-green-200 p-2.5 rounded">
+            <div className="flex items-center space-x-1.5 font-medium">
+              <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+              <span>Your answer has been recorded. Click "Next" in the bottom right to continue.</span>
+            </div>
           </div>
         )}
       </div>

@@ -63,16 +63,19 @@ export class AudioRecorderEngine {
   private analyser: AnalyserNode | null = null;
   private microphoneStream: MediaStream | null = null;
   private silenceTimer: NodeJS.Timeout | null = null;
-  private consecutiveSilenceSeconds = 0;
+  private initialSilenceSeconds = 0;
+  private hasSpoken = false;
   private silenceCutoffTriggered = false;
   private volumeCheckInterval: NodeJS.Timeout | null = null;
 
   async start(
     onVolumeChange?: (volume: number) => void,
-    onSilenceCutoff?: () => void
+    onSilenceCutoff?: () => void,
+    enableInitialSilenceCutoff = false
   ): Promise<void> {
     this.audioChunks = [];
-    this.consecutiveSilenceSeconds = 0;
+    this.initialSilenceSeconds = 0;
+    this.hasSpoken = false;
     this.silenceCutoffTriggered = false;
 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -103,17 +106,22 @@ export class AudioRecorderEngine {
           onVolumeChange(normalizedVolume);
         }
 
-        // Pearson 3-second silence detector
-        if (normalizedVolume < 5) {
-          this.consecutiveSilenceSeconds += 0.2;
-          if (this.consecutiveSilenceSeconds >= 3.0 && !this.silenceCutoffTriggered) {
+        // Voice activity flag: Once the candidate makes a sound, lock hasSpoken = true
+        if (normalizedVolume >= 3) {
+          this.hasSpoken = true;
+        }
+
+        // Pearson initial silence detector:
+        // ONLY active if explicitly requested and before the candidate starts speaking.
+        // Once the candidate starts speaking, NEVER cut them off mid-sentence!
+        if (enableInitialSilenceCutoff && !this.hasSpoken) {
+          this.initialSilenceSeconds += 0.2;
+          if (this.initialSilenceSeconds >= 5.0 && !this.silenceCutoffTriggered) {
             this.silenceCutoffTriggered = true;
             if (onSilenceCutoff) {
               onSilenceCutoff();
             }
           }
-        } else {
-          this.consecutiveSilenceSeconds = 0;
         }
       }, 200);
     }

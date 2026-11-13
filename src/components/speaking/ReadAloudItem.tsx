@@ -9,6 +9,7 @@ export interface ReadAloudItemProps {
   prepTimeSeconds?: number;
   recordingSeconds?: number;
   onRecordingComplete: (audioBlob: Blob, transcript: string, durationSeconds: number) => void;
+  onTranscriptUpdate?: (transcript: string) => void;
 }
 
 export const ReadAloudItem: React.FC<ReadAloudItemProps> = ({
@@ -16,6 +17,7 @@ export const ReadAloudItem: React.FC<ReadAloudItemProps> = ({
   prepTimeSeconds = 35,
   recordingSeconds = 40,
   onRecordingComplete,
+  onTranscriptUpdate,
 }) => {
   const [status, setStatus] = useState<SpeakingState>('COUNTDOWN');
   const [secondsLeft, setSecondsLeft] = useState(prepTimeSeconds);
@@ -33,12 +35,8 @@ export const ReadAloudItem: React.FC<ReadAloudItemProps> = ({
       if (secondsLeft > 0) {
         timer = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
       } else {
-        // Prep ended -> play beep and switch to RECORDING
-        playCountdownBeep().then(() => {
-          setStatus('RECORDING');
-          setSecondsLeft(recordingSeconds);
-          startAudioCapture();
-        });
+        // Prep countdown ended -> play beep and switch to RECORDING
+        handleSkipPrep();
       }
     } else if (status === 'RECORDING') {
       if (secondsLeft > 0) {
@@ -54,23 +52,41 @@ export const ReadAloudItem: React.FC<ReadAloudItemProps> = ({
     };
   }, [status, secondsLeft]);
 
+  const handleSkipPrep = () => {
+    if (status !== 'COUNTDOWN') return;
+    playCountdownBeep().then(() => {
+      setStatus('RECORDING');
+      setSecondsLeft(recordingSeconds);
+      startAudioCapture();
+    });
+  };
+
+  const handleFinishRecording = () => {
+    if (status !== 'RECORDING') return;
+    finishRecording();
+  };
+
   const startAudioCapture = async () => {
     recorderRef.current = new AudioRecorderEngine();
     speechRef.current = new SpeechRecognitionService();
     startTimeRef.current = Date.now();
 
     speechRef.current.start(
-      (interim) => setLiveTranscript(interim),
-      (finalText) => setLiveTranscript(finalText)
+      (interim) => {
+        setLiveTranscript(interim);
+        if (onTranscriptUpdate) onTranscriptUpdate(interim);
+      },
+      (finalText) => {
+        setLiveTranscript(finalText);
+        if (onTranscriptUpdate) onTranscriptUpdate(finalText);
+      }
     );
 
     try {
       await recorderRef.current.start(
         (vol) => setVolumeLevel(vol),
-        () => {
-          // 3-second silence auto-cutoff triggered!
-          finishRecording();
-        }
+        () => finishRecording(),
+        false // Do not prematurely cut off candidates mid-speech
       );
     } catch {
       // mic error
@@ -113,6 +129,8 @@ export const ReadAloudItem: React.FC<ReadAloudItemProps> = ({
         secondsLeft={secondsLeft}
         volumeLevel={volumeLevel}
         totalRecordingSeconds={recordingSeconds}
+        onSkipPrep={handleSkipPrep}
+        onFinishRecording={handleFinishRecording}
       />
     </div>
   );
