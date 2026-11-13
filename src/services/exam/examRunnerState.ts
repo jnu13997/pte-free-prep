@@ -62,12 +62,19 @@ export function advanceQuestion(
   }
 
   const nextQuestion = session.questions[nextIndex];
+  const isSameSection = nextQuestion.section === session.currentSection;
+  const isPooledSection = nextQuestion.section === 'READING' || nextQuestion.section === 'LISTENING';
+
+  const timeRemainingSeconds =
+    isSameSection && isPooledSection
+      ? session.timeRemainingSeconds
+      : nextQuestion.durationSeconds || (isPooledSection ? 1800 : 40);
 
   return {
     ...session,
     currentQuestionIndex: nextIndex,
     currentSection: nextQuestion.section,
     responses: updatedResponses,
-    timeRemainingSeconds: nextQuestion.durationSeconds || 40,
+    timeRemainingSeconds,
   };
 }

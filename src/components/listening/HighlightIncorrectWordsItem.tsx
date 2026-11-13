@@ -33,6 +33,9 @@ export const HighlightIncorrectWordsItem: React.FC<HighlightIncorrectWordsItemPr
     }
     return () => {
       if (timer) clearTimeout(timer);
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, [playState, secondsUntilPlay]);
 

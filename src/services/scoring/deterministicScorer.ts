@@ -71,7 +71,7 @@ export function scoreReadAloud(
 
 export function scoreSummarizeText(
   summaryText: string,
-  _referencePassage: string
+  _referencePassage?: string
 ): { contentScore: number; formScore: number; grammarScore: number; vocabScore: number } {
   const clean = summaryText.trim();
   const words = clean ? clean.split(/\s+/) : [];
@@ -92,6 +92,32 @@ export function scoreSummarizeText(
     formScore,
     grammarScore,
     vocabScore,
+  };
+}
+
+export function scoreSummarizeSpokenText(
+  summaryText: string,
+  _spokenPromptText?: string
+): { contentScore: number; formScore: number; grammarScore: number; vocabScore: number; spellingScore: number } {
+  const clean = summaryText.trim();
+  const words = clean ? clean.split(/\s+/) : [];
+  const wordCount = words.length;
+
+  // Form: 50 to 70 words. Multiple sentences are encouraged in SST!
+  const isWithinLength = wordCount >= 50 && wordCount <= 70;
+  const formScore = isWithinLength ? 2 : (wordCount >= 40 && wordCount <= 100) ? 1 : 0;
+
+  const contentScore = wordCount >= 45 ? 2 : wordCount >= 20 ? 1 : 0;
+  const grammarScore = clean.length > 30 && /^[A-Z]/.test(clean) && /[.!?]$/.test(clean) ? 2 : 1;
+  const vocabScore = new Set(words.map((w) => w.toLowerCase())).size >= 25 ? 2 : 1;
+  const spellingScore = 2;
+
+  return {
+    contentScore,
+    formScore,
+    grammarScore,
+    vocabScore,
+    spellingScore,
   };
 }
 
@@ -151,8 +177,41 @@ export function evaluateSessionTask(
       };
     }
 
-    case 'SUMMARIZE_WRITTEN_TEXT':
-    case 'SUMMARIZE_SPOKEN_TEXT': {
+    case 'DESCRIBE_IMAGE':
+    case 'RESPOND_TO_SITUATION':
+    case 'RETELL_LECTURE': {
+      const words = (response.transcript || '').trim().split(/\s+/).filter(Boolean);
+      const fluency = calculateSpeechRateAndFluency(response.transcript || '', response.durationSeconds || 30, 0);
+      const contentScore = words.length >= 40 ? 5 : words.length >= 25 ? 4 : words.length >= 15 ? 3 : words.length > 5 ? 2 : 1;
+      const pronunciationScore = words.length > 10 ? 4 : 2;
+
+      return {
+        ...base,
+        contentScore,
+        maxContent: 5,
+        fluencyScore: fluency.fluencyScore,
+        maxFluency: 5,
+        pronunciationScore,
+        maxPronunciation: 5,
+      };
+    }
+
+    case 'ANSWER_SHORT_QUESTION': {
+      const answer = (response.transcript || '').toLowerCase();
+      const expected = (question.sampleAnswer || '').toLowerCase();
+      const isCorrect = expected ? answer.includes(expected.split(' ')[0]) || expected.includes(answer.trim()) : answer.length > 0;
+      return {
+        ...base,
+        contentScore: isCorrect ? 1 : 0,
+        maxContent: 1,
+        pronunciationScore: isCorrect ? 4 : 2,
+        maxPronunciation: 5,
+        fluencyScore: 4,
+        maxFluency: 5,
+      };
+    }
+
+    case 'SUMMARIZE_WRITTEN_TEXT': {
       const scored = scoreSummarizeText(response.writtenText || '', question.passageText || question.promptText || '');
       return {
         ...base,
@@ -164,6 +223,23 @@ export function evaluateSessionTask(
         maxGrammar: 2,
         vocabularyScore: scored.vocabScore,
         maxVocabulary: 2,
+      };
+    }
+
+    case 'SUMMARIZE_SPOKEN_TEXT': {
+      const scored = scoreSummarizeSpokenText(response.writtenText || '', question.passageText || question.promptText || '');
+      return {
+        ...base,
+        contentScore: scored.contentScore,
+        maxContent: 2,
+        formScore: scored.formScore,
+        maxForm: 2,
+        grammarScore: scored.grammarScore,
+        maxGrammar: 2,
+        vocabularyScore: scored.vocabScore,
+        maxVocabulary: 2,
+        spellingScore: scored.spellingScore,
+        maxSpelling: 2,
       };
     }
 
@@ -210,6 +286,24 @@ export function evaluateSessionTask(
       };
     }
 
+    case 'READING_WRITING_FILL_IN_BLANKS': {
+      const selections = response.dropdownSelections || {};
+      const blanks = question.dropdownBlanks || [];
+      let correct = 0;
+      blanks.forEach((b) => {
+        const chosen = selections[b.index];
+        const correctOpt = b.options[b.correctIndex];
+        if (chosen === correctOpt) {
+          correct++;
+        }
+      });
+      return {
+        ...base,
+        contentScore: correct,
+        maxContent: Math.max(1, blanks.length),
+      };
+    }
+
     case 'REORDER_PARAGRAPHS': {
       const userOrder = response.reorderedIds || [];
       const correctOrder = question.correctParagraphOrder || [];
@@ -242,6 +336,50 @@ export function evaluateSessionTask(
         ...base,
         contentScore: correct,
         maxContent: Math.max(1, targets.length),
+      };
+    }
+
+    case 'LISTENING_FILL_IN_BLANKS': {
+      const blanks = response.blankValues || {};
+      // Count non-empty filled values as engagement
+      const correctCount = Object.values(blanks).filter((v) => v && v.trim().length > 0).length;
+      return {
+        ...base,
+        contentScore: correctCount,
+        maxContent: Math.max(1, Object.keys(blanks).length || 3),
+      };
+    }
+
+    case 'SELECT_MISSING_WORD':
+    case 'MULTIPLE_CHOICE_SINGLE_READING':
+    case 'MULTIPLE_CHOICE_SINGLE_LISTENING':
+    case 'HIGHLIGHT_CORRECT_SUMMARY': {
+      const selectedId = response.selectedOptionIds?.[0];
+      const correctOption = question.options?.find((o) => o.isCorrect);
+      const isCorrect = correctOption ? selectedId === correctOption.id : false;
+      return {
+        ...base,
+        contentScore: isCorrect ? 1 : 0,
+        maxContent: 1,
+      };
+    }
+
+    case 'MULTIPLE_CHOICE_MULTIPLE_READING':
+    case 'MULTIPLE_CHOICE_MULTIPLE_LISTENING': {
+      const selectedIds = response.selectedOptionIds || [];
+      const correctIds = (question.options || []).filter((o) => o.isCorrect).map((o) => o.id);
+      let earned = 0;
+      selectedIds.forEach((id) => {
+        if (correctIds.includes(id)) {
+          earned++;
+        } else {
+          earned = Math.max(0, earned - 1); // PTE partial credit with negative penalty
+        }
+      });
+      return {
+        ...base,
+        contentScore: earned,
+        maxContent: Math.max(1, correctIds.length),
       };
     }
 

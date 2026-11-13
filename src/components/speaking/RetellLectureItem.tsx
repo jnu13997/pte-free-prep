@@ -33,14 +33,25 @@ export const RetellLectureItem: React.FC<RetellLectureItemProps> = ({
   const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
+    let audio: HTMLAudioElement | null = null;
     if (audioPromptUrl) {
-      const audio = new Audio(audioPromptUrl);
+      audio = new Audio(audioPromptUrl);
       audio.onended = () => onLectureEnded();
       audio.onerror = () => fallbackLectureTts();
       audio.play().catch(() => fallbackLectureTts());
     } else {
       fallbackLectureTts();
     }
+
+    return () => {
+      if (audio) {
+        audio.pause();
+        audio.src = '';
+      }
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
   }, []);
 
   const fallbackLectureTts = () => {

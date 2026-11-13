@@ -27,15 +27,25 @@ export const RepeatSentenceItem: React.FC<RepeatSentenceItemProps> = ({
   const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
-    // Play sentence audio (or speech synthesis fallback)
+    let audio: HTMLAudioElement | null = null;
     if (audioPromptUrl) {
-      const audio = new Audio(audioPromptUrl);
+      audio = new Audio(audioPromptUrl);
       audio.onended = () => onAudioFinished();
       audio.onerror = () => fallbackTts();
       audio.play().catch(() => fallbackTts());
     } else {
       fallbackTts();
     }
+
+    return () => {
+      if (audio) {
+        audio.pause();
+        audio.src = '';
+      }
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
   }, []);
 
   const fallbackTts = () => {

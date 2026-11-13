@@ -19,9 +19,11 @@ export const SummarizeSpokenTextItem: React.FC<SummarizeSpokenTextItemProps> = (
   const [secondsUntilPlay, setSecondsUntilPlay] = useState(5);
   const [progressPercent, setProgressPercent] = useState(0);
   const [volume, setVolume] = useState(0.85);
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
+
     if (playState === 'PREPARING') {
       if (secondsUntilPlay > 0) {
         timer = setTimeout(() => setSecondsUntilPlay((s) => s - 1), 1000);
@@ -32,12 +34,20 @@ export const SummarizeSpokenTextItem: React.FC<SummarizeSpokenTextItemProps> = (
     }
     return () => {
       if (timer) clearTimeout(timer);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, [playState, secondsUntilPlay]);
 
   const startAudioPlayback = () => {
     if (audioPromptUrl) {
       const audio = new Audio(audioPromptUrl);
+      audioRef.current = audio;
       audio.volume = volume;
       audio.ontimeupdate = () => {
         if (audio.duration) {

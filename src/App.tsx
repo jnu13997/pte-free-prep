@@ -43,17 +43,62 @@ export const App: React.FC = () => {
     setCurrentView('DRILL');
   };
 
-  const handleFinishExam = (
+  const [isEvaluatingAi, setIsEvaluatingAi] = useState(false);
+
+  const handleFinishExam = async (
     responses: Record<string, UserExamResponse>,
     questions: QuestionItem[]
   ) => {
-    const rawScores: TaskRawScore[] = questions.map((q) => {
+    setIsEvaluatingAi(true);
+
+    const apiKey = GeminiScorerService.getSavedApiKey();
+
+    const rawScores: TaskRawScore[] = [];
+
+    for (const q of questions) {
       const resp = responses[q.id] || { taskId: q.id };
-      return evaluateSessionTask(q, resp);
-    });
+      let taskScore = evaluateSessionTask(q, resp);
+
+      // If user provided a Gemini API Key and this is a free-form Speaking or Writing task, run multimodal evaluation
+      if (
+        apiKey &&
+        (q.type === 'DESCRIBE_IMAGE' ||
+          q.type === 'RESPOND_TO_SITUATION' ||
+          q.type === 'RETELL_LECTURE' ||
+          q.type === 'WRITE_EMAIL' ||
+          q.type === 'WRITE_ESSAY' ||
+          q.type === 'SUMMARIZE_WRITTEN_TEXT' ||
+          q.type === 'SUMMARIZE_SPOKEN_TEXT')
+      ) {
+        try {
+          const aiResult = await GeminiScorerService.evaluateAudioOrText(
+            q.type,
+            q.promptText || q.passageText || q.title,
+            resp.writtenText || resp.transcript || '',
+            resp.audioBlob
+          );
+
+          if (aiResult) {
+            taskScore = {
+              ...taskScore,
+              contentScore: aiResult.contentScore,
+              fluencyScore: aiResult.fluencyScore,
+              pronunciationScore: aiResult.pronunciationScore,
+              grammarScore: aiResult.grammarScore,
+              vocabularyScore: aiResult.vocabularyScore,
+            };
+          }
+        } catch {
+          // graceful fallback to deterministic score
+        }
+      }
+
+      rawScores.push(taskScore);
+    }
 
     const report = computePteScores(rawScores);
     setScoreReport(report);
+    setIsEvaluatingAi(false);
     setCurrentView('SCORE_REPORT');
   };
 
@@ -165,7 +210,15 @@ export const App: React.FC = () => {
 
       {/* Main Body */}
       <main className="flex-1 py-8">
-        {currentView === 'SCORE_REPORT' && scoreReport ? (
+        {isEvaluatingAi ? (
+          <div className="max-w-md mx-auto my-20 p-8 bg-white rounded-xl border border-pearson-borderGray shadow-md text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pearson-blue mx-auto" />
+            <h2 className="text-lg font-bold text-gray-900">AI Examiner Evaluating Responses</h2>
+            <p className="text-xs text-gray-500">
+              Performing multimodal acoustic pronunciation and grammatical cohesion assessment...
+            </p>
+          </div>
+        ) : currentView === 'SCORE_REPORT' && scoreReport ? (
           <ScoreReportView
             report={scoreReport}
             onRetake={handleStartExam}

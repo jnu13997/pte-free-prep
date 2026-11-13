@@ -65,4 +65,36 @@ describe('Exam Runner State Machine', () => {
 
     expect(session.isComplete).toBe(true);
   });
+
+  it('preserves pooled section timer across Reading questions', () => {
+    const readingQuestions: QuestionItem[] = [
+      {
+        id: 'r1',
+        type: 'READING_FILL_IN_BLANKS',
+        examMode: 'BOTH',
+        section: 'READING',
+        title: 'Reading 1',
+        instructions: 'Fill blanks',
+        durationSeconds: 1800, // 30 min pooled section
+      },
+      {
+        id: 'r2',
+        type: 'REORDER_PARAGRAPHS',
+        examMode: 'BOTH',
+        section: 'READING',
+        title: 'Reading 2',
+        instructions: 'Reorder',
+      },
+    ];
+
+    let session = createExamSession('PTE_CORE', readingQuestions);
+    expect(session.timeRemainingSeconds).toBe(1800);
+
+    // Simulate 60 seconds spent on r1
+    session.timeRemainingSeconds = 1740;
+    const nextSession = advanceQuestion(session, { taskId: 'r1' });
+
+    // Should preserve the 1740s remaining rather than resetting
+    expect(nextSession.timeRemainingSeconds).toBe(1740);
+  });
 });

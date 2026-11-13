@@ -28,14 +28,25 @@ export const AnswerShortQuestionItem: React.FC<AnswerShortQuestionItemProps> = (
   const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
+    let audio: HTMLAudioElement | null = null;
     if (audioPromptUrl) {
-      const audio = new Audio(audioPromptUrl);
+      audio = new Audio(audioPromptUrl);
       audio.onended = () => onAudioEnded();
       audio.onerror = () => fallbackTts();
       audio.play().catch(() => fallbackTts());
     } else {
       fallbackTts();
     }
+
+    return () => {
+      if (audio) {
+        audio.pause();
+        audio.src = '';
+      }
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
   }, []);
 
   const fallbackTts = () => {

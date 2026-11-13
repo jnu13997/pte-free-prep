@@ -33,6 +33,9 @@ export const ListeningBlanksItem: React.FC<ListeningBlanksItemProps> = ({
     }
     return () => {
       if (timer) clearTimeout(timer);
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, [playState, secondsUntilPlay]);
 

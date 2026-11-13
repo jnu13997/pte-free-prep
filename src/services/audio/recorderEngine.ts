@@ -64,6 +64,7 @@ export class AudioRecorderEngine {
   private microphoneStream: MediaStream | null = null;
   private silenceTimer: NodeJS.Timeout | null = null;
   private consecutiveSilenceSeconds = 0;
+  private silenceCutoffTriggered = false;
   private volumeCheckInterval: NodeJS.Timeout | null = null;
 
   async start(
@@ -72,6 +73,7 @@ export class AudioRecorderEngine {
   ): Promise<void> {
     this.audioChunks = [];
     this.consecutiveSilenceSeconds = 0;
+    this.silenceCutoffTriggered = false;
 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     this.microphoneStream = stream;
@@ -104,7 +106,8 @@ export class AudioRecorderEngine {
         // Pearson 3-second silence detector
         if (normalizedVolume < 5) {
           this.consecutiveSilenceSeconds += 0.2;
-          if (this.consecutiveSilenceSeconds >= 3.0) {
+          if (this.consecutiveSilenceSeconds >= 3.0 && !this.silenceCutoffTriggered) {
+            this.silenceCutoffTriggered = true;
             if (onSilenceCutoff) {
               onSilenceCutoff();
             }

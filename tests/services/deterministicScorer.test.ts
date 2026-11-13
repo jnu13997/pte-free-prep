@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { scoreReadAloud, scoreSummarizeText, scoreWriteFromDictation } from '../../src/services/scoring/deterministicScorer';
+import {
+  scoreReadAloud,
+  scoreSummarizeText,
+  scoreSummarizeSpokenText,
+  scoreWriteFromDictation,
+  evaluateSessionTask,
+} from '../../src/services/scoring/deterministicScorer';
 
 describe('Deterministic Scorer', () => {
   it('evaluates Read Aloud using phonetic similarity and word error rate', () => {
@@ -29,5 +35,58 @@ describe('Deterministic Scorer', () => {
 
     expect(score.contentScore).toBe(7);
     expect(score.maxContent).toBe(7);
+  });
+
+  it('evaluates Summarize Spoken Text allowing multiple sentences within 50-70 words', () => {
+    const multiSentenceSummary =
+      'The lecture explored modern artificial intelligence diagnostics in medical radiology across major research hospitals. Machine learning models can analyze tens of thousands of past scans with notable accuracy and efficiency. However, clinical ethicists and senior researchers emphasize that human medical oversight remains essential to ensure patient safety and ethical treatment standards worldwide.';
+    const score = scoreSummarizeSpokenText(multiSentenceSummary);
+
+    expect(score.formScore).toBe(2);
+    expect(score.contentScore).toBeGreaterThanOrEqual(1);
+  });
+
+  it('evaluates Reading & Writing Blanks dropdown selections accurately', () => {
+    const question = {
+      id: 'rwfib-test',
+      type: 'READING_WRITING_FILL_IN_BLANKS' as const,
+      examMode: 'BOTH' as const,
+      section: 'READING' as const,
+      title: 'Dropdown Test',
+      instructions: 'Select options',
+      dropdownBlanks: [
+        { index: 0, options: ['apple', 'banana'], correctIndex: 0 },
+        { index: 1, options: ['cat', 'dog'], correctIndex: 1 },
+      ],
+    };
+    const response = {
+      taskId: 'rwfib-test',
+      dropdownSelections: { 0: 'apple', 1: 'dog' },
+    };
+    const result = evaluateSessionTask(question, response);
+    expect(result.contentScore).toBe(2);
+    expect(result.maxContent).toBe(2);
+  });
+
+  it('evaluates Select Missing Word correctly', () => {
+    const question = {
+      id: 'smw-test',
+      type: 'SELECT_MISSING_WORD' as const,
+      examMode: 'BOTH' as const,
+      section: 'LISTENING' as const,
+      title: 'SMW Test',
+      instructions: 'Select option',
+      options: [
+        { id: 'opt-1', text: 'Wrong' },
+        { id: 'opt-2', text: 'Correct', isCorrect: true },
+      ],
+    };
+    const response = {
+      taskId: 'smw-test',
+      selectedOptionIds: ['opt-2'],
+    };
+    const result = evaluateSessionTask(question, response);
+    expect(result.contentScore).toBe(1);
+    expect(result.maxContent).toBe(1);
   });
 });

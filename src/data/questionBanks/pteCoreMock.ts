@@ -10,7 +10,7 @@ export const pteCoreMockQuestions: QuestionItem[] = [
     title: 'Personal Introduction',
     instructions: 'Read the prompt below. In 25 seconds, you must speak into the microphone to introduce yourself.',
     prepTimeSeconds: 25,
-    durationSeconds: 30,
+    durationSeconds: 60,
     promptText: 'Please introduce yourself. You could talk about your background, your family, your interests, or your goals for moving to Canada.',
   },
 
