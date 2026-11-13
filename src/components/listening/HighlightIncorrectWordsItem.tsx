@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AudioPlayerStatusBox, AudioPlayState } from './AudioPlayerStatusBox';
+import { naturalSpeech } from '../../services/audio/naturalSpeechService';
 
 export interface HighlightIncorrectWordsItemProps {
   transcript: string;
@@ -33,9 +34,7 @@ export const HighlightIncorrectWordsItem: React.FC<HighlightIncorrectWordsItemPr
     }
     return () => {
       if (timer) clearTimeout(timer);
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      naturalSpeech.cancel();
     };
   }, [playState, secondsUntilPlay]);
 
@@ -59,22 +58,17 @@ export const HighlightIncorrectWordsItem: React.FC<HighlightIncorrectWordsItemPr
   };
 
   const fallbackTts = () => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(transcript);
-      utterance.volume = volume;
-      utterance.rate = 0.95;
-      utterance.onend = () => {
+    naturalSpeech.speak(transcript, {
+      volume,
+      onEnd: () => {
         setPlayState('STOPPED');
         setProgressPercent(100);
-      };
-      window.speechSynthesis.speak(utterance);
-    } else {
-      setTimeout(() => {
+      },
+      onError: () => {
         setPlayState('STOPPED');
         setProgressPercent(100);
-      }, 5000);
-    }
+      },
+    });
   };
 
   const toggleWordHighlight = (index: number) => {

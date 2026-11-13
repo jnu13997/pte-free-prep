@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AudioPlayerStatusBox, AudioPlayState } from './AudioPlayerStatusBox';
+import { naturalSpeech } from '../../services/audio/naturalSpeechService';
 
 export interface WriteFromDictationItemProps {
   sentencePrompt: string;
@@ -31,9 +32,7 @@ export const WriteFromDictationItem: React.FC<WriteFromDictationItemProps> = ({
     }
     return () => {
       if (timer) clearTimeout(timer);
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      naturalSpeech.cancel();
     };
   }, [playState, secondsUntilPlay]);
 
@@ -57,22 +56,17 @@ export const WriteFromDictationItem: React.FC<WriteFromDictationItemProps> = ({
   };
 
   const fallbackTts = () => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(sentencePrompt);
-      utterance.volume = volume;
-      utterance.rate = 0.95;
-      utterance.onend = () => {
+    naturalSpeech.speak(sentencePrompt, {
+      volume,
+      onEnd: () => {
         setPlayState('STOPPED');
         setProgressPercent(100);
-      };
-      window.speechSynthesis.speak(utterance);
-    } else {
-      setTimeout(() => {
+      },
+      onError: () => {
         setPlayState('STOPPED');
         setProgressPercent(100);
-      }, 4000);
-    }
+      },
+    });
   };
 
   const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;

@@ -3,6 +3,7 @@ import { SpeakingStatusBox, SpeakingState } from './SpeakingStatusBox';
 import { playCountdownBeep } from '../../services/audio/beepSynthesizer';
 import { AudioRecorderEngine } from '../../services/audio/recorderEngine';
 import { SpeechRecognitionService } from '../../services/audio/speechRecognition';
+import { naturalSpeech } from '../../services/audio/naturalSpeechService';
 import { Volume2 } from 'lucide-react';
 
 export interface RetellLectureItemProps {
@@ -48,22 +49,15 @@ export const RetellLectureItem: React.FC<RetellLectureItemProps> = ({
         audio.pause();
         audio.src = '';
       }
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      naturalSpeech.cancel();
     };
   }, []);
 
   const fallbackLectureTts = () => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(lectureText);
-      utterance.rate = 1.0;
-      utterance.onend = () => onLectureEnded();
-      window.speechSynthesis.speak(utterance);
-    } else {
-      setTimeout(() => onLectureEnded(), 4000);
-    }
+    naturalSpeech.speak(lectureText, {
+      onEnd: () => onLectureEnded(),
+      onError: () => onLectureEnded(),
+    });
   };
 
   const onLectureEnded = () => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AudioPlayerStatusBox, AudioPlayState } from './AudioPlayerStatusBox';
 import { WritingEditor } from '../writing/WritingEditor';
+import { naturalSpeech } from '../../services/audio/naturalSpeechService';
 
 export interface SummarizeSpokenTextItemProps {
   spokenPromptText: string;
@@ -38,9 +39,7 @@ export const SummarizeSpokenTextItem: React.FC<SummarizeSpokenTextItemProps> = (
         audioRef.current.pause();
         audioRef.current.src = '';
       }
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      naturalSpeech.cancel();
     };
   }, [playState, secondsUntilPlay]);
 
@@ -65,22 +64,17 @@ export const SummarizeSpokenTextItem: React.FC<SummarizeSpokenTextItemProps> = (
   };
 
   const fallbackTts = () => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(spokenPromptText);
-      utterance.volume = volume;
-      utterance.rate = 0.95;
-      utterance.onend = () => {
+    naturalSpeech.speak(spokenPromptText, {
+      volume,
+      onEnd: () => {
         setPlayState('STOPPED');
         setProgressPercent(100);
-      };
-      window.speechSynthesis.speak(utterance);
-    } else {
-      setTimeout(() => {
+      },
+      onError: () => {
         setPlayState('STOPPED');
         setProgressPercent(100);
-      }, 5000);
-    }
+      },
+    });
   };
 
   return (

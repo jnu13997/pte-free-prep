@@ -24,6 +24,7 @@ export const pteAcademicMockQuestions: QuestionItem[] = [
     instructions: 'You will hear a sentence. Please repeat the sentence exactly as you hear it. You will hear the sentence only once.',
     durationSeconds: 15,
     promptText: 'Scholarly citations must be formatted accurately according to the departmental publication guidelines.',
+    promptAudioUrl: './audio/prompts/acad-rs-1.mp3',
   },
 
   // 3. Re-tell Lecture (PTE Academic Unique)
@@ -37,6 +38,7 @@ export const pteAcademicMockQuestions: QuestionItem[] = [
     prepTimeSeconds: 10,
     durationSeconds: 40,
     promptText: 'Ocean acidification occurs when atmospheric carbon dioxide dissolves into seawater, forming carbonic acid and decreasing oceanic pH levels. Marine biologists have documented that this chemical shift severely impedes coral calcification and disrupts calcareous shell formation among mollusks, destabilizing global aquatic trophic pyramids.',
+    promptAudioUrl: './audio/prompts/acad-rtl-1.mp3',
   },
 
   // 4. Summarize Written Text
@@ -89,5 +91,6 @@ export const pteAcademicMockQuestions: QuestionItem[] = [
     title: 'Write from Dictation - Statistical Significance',
     instructions: 'You will hear a sentence. Type the sentence in the box below exactly as you hear it.',
     promptText: 'Quantitative research methodologies require rigorous empirical verification to establish statistical significance.',
+    promptAudioUrl: './audio/prompts/acad-wfd-1.mp3',
   },
 ];

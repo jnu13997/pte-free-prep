@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AudioPlayerStatusBox, AudioPlayState } from './AudioPlayerStatusBox';
+import { naturalSpeech } from '../../services/audio/naturalSpeechService';
 
 export interface ListeningBlanksItemProps {
   passageSegments: string[]; // e.g. ["The project was ", " by the local government to improve ", " conditions."]
@@ -33,9 +34,7 @@ export const ListeningBlanksItem: React.FC<ListeningBlanksItemProps> = ({
     }
     return () => {
       if (timer) clearTimeout(timer);
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      naturalSpeech.cancel();
     };
   }, [playState, secondsUntilPlay]);
 
@@ -59,22 +58,23 @@ export const ListeningBlanksItem: React.FC<ListeningBlanksItemProps> = ({
   };
 
   const fallbackTts = () => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window && transcriptForFallback) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(transcriptForFallback);
-      utterance.volume = volume;
-      utterance.rate = 0.95;
-      utterance.onend = () => {
-        setPlayState('STOPPED');
-        setProgressPercent(100);
-      };
-      window.speechSynthesis.speak(utterance);
-    } else {
-      setTimeout(() => {
-        setPlayState('STOPPED');
-        setProgressPercent(100);
-      }, 5000);
+    if (!transcriptForFallback) {
+      setPlayState('STOPPED');
+      setProgressPercent(100);
+      return;
     }
+
+    naturalSpeech.speak(transcriptForFallback, {
+      volume,
+      onEnd: () => {
+        setPlayState('STOPPED');
+        setProgressPercent(100);
+      },
+      onError: () => {
+        setPlayState('STOPPED');
+        setProgressPercent(100);
+      },
+    });
   };
 
   return (

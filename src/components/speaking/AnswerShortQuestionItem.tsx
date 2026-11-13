@@ -3,6 +3,7 @@ import { SpeakingStatusBox, SpeakingState } from './SpeakingStatusBox';
 import { playCountdownBeep } from '../../services/audio/beepSynthesizer';
 import { AudioRecorderEngine } from '../../services/audio/recorderEngine';
 import { SpeechRecognitionService } from '../../services/audio/speechRecognition';
+import { naturalSpeech } from '../../services/audio/naturalSpeechService';
 import { Volume2 } from 'lucide-react';
 
 export interface AnswerShortQuestionItemProps {
@@ -43,22 +44,15 @@ export const AnswerShortQuestionItem: React.FC<AnswerShortQuestionItemProps> = (
         audio.pause();
         audio.src = '';
       }
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      naturalSpeech.cancel();
     };
   }, []);
 
   const fallbackTts = () => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(questionText);
-      utterance.rate = 1.0;
-      utterance.onend = () => onAudioEnded();
-      window.speechSynthesis.speak(utterance);
-    } else {
-      setTimeout(() => onAudioEnded(), 2500);
-    }
+    naturalSpeech.speak(questionText, {
+      onEnd: () => onAudioEnded(),
+      onError: () => onAudioEnded(),
+    });
   };
 
   const onAudioEnded = () => {

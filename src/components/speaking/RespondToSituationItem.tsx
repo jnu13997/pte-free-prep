@@ -3,10 +3,13 @@ import { SpeakingStatusBox, SpeakingState } from './SpeakingStatusBox';
 import { playCountdownBeep } from '../../services/audio/beepSynthesizer';
 import { AudioRecorderEngine } from '../../services/audio/recorderEngine';
 import { SpeechRecognitionService } from '../../services/audio/speechRecognition';
+import { naturalSpeech } from '../../services/audio/naturalSpeechService';
+import { Volume2 } from 'lucide-react';
 
 export interface RespondToSituationItemProps {
   situationText: string;
   rolePrompt: string;
+  audioPromptUrl?: string;
   prepTimeSeconds?: number;
   recordingSeconds?: number;
   onRecordingComplete: (audioBlob: Blob, transcript: string, durationSeconds: number) => void;
@@ -15,10 +18,12 @@ export interface RespondToSituationItemProps {
 export const RespondToSituationItem: React.FC<RespondToSituationItemProps> = ({
   situationText,
   rolePrompt,
+  audioPromptUrl,
   prepTimeSeconds = 25,
   recordingSeconds = 40,
   onRecordingComplete,
 }) => {
+  const [isPlayingAudio, setIsPlayingAudio] = useState(true);
   const [status, setStatus] = useState<SpeakingState>('COUNTDOWN');
   const [secondsLeft, setSecondsLeft] = useState(prepTimeSeconds);
   const [volumeLevel, setVolumeLevel] = useState(0);
@@ -28,6 +33,41 @@ export const RespondToSituationItem: React.FC<RespondToSituationItemProps> = ({
   const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
+    let audio: HTMLAudioElement | null = null;
+    if (audioPromptUrl) {
+      audio = new Audio(audioPromptUrl);
+      audio.onended = () => onAudioFinished();
+      audio.onerror = () => fallbackTts();
+      audio.play().catch(() => fallbackTts());
+    } else {
+      fallbackTts();
+    }
+
+    return () => {
+      if (audio) {
+        audio.pause();
+        audio.src = '';
+      }
+      naturalSpeech.cancel();
+    };
+  }, []);
+
+  const fallbackTts = () => {
+    naturalSpeech.speak(situationText, {
+      onEnd: () => onAudioFinished(),
+      onError: () => onAudioFinished(),
+    });
+  };
+
+  const onAudioFinished = () => {
+    setIsPlayingAudio(false);
+    setStatus('COUNTDOWN');
+    setSecondsLeft(prepTimeSeconds);
+  };
+
+  useEffect(() => {
+    if (isPlayingAudio) return;
+
     let timer: NodeJS.Timeout | null = null;
     if (status === 'COUNTDOWN') {
       if (secondsLeft > 0) {
@@ -49,7 +89,7 @@ export const RespondToSituationItem: React.FC<RespondToSituationItemProps> = ({
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [status, secondsLeft]);
+  }, [isPlayingAudio, status, secondsLeft]);
 
   const startRecording = async () => {
     recorderRef.current = new AudioRecorderEngine();
@@ -101,6 +141,13 @@ export const RespondToSituationItem: React.FC<RespondToSituationItemProps> = ({
       </div>
 
       <div className="bg-white p-6 rounded border border-pearson-borderGray shadow-sm space-y-4">
+        {isPlayingAudio && (
+          <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 px-4 py-3 rounded text-sm text-blue-900 font-medium animate-pulse">
+            <Volume2 className="w-5 h-5 text-blue-600 animate-bounce" />
+            <span>Playing situation audio prompt (Canadian Native Accent)...</span>
+          </div>
+        )}
+
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Situation</span>
           <p className="text-base text-gray-800 mt-1 leading-relaxed">{situationText}</p>
@@ -112,8 +159,8 @@ export const RespondToSituationItem: React.FC<RespondToSituationItemProps> = ({
       </div>
 
       <SpeakingStatusBox
-        status={status}
-        secondsLeft={secondsLeft}
+        status={isPlayingAudio ? 'COUNTDOWN' : status}
+        secondsLeft={isPlayingAudio ? 0 : secondsLeft}
         volumeLevel={volumeLevel}
         totalRecordingSeconds={recordingSeconds}
       />

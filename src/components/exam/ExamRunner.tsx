@@ -167,6 +167,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
           <RespondToSituationItem
             situationText={currentQ.passageText || ''}
             rolePrompt={currentQ.promptText || ''}
+            audioPromptUrl={currentQ.promptAudioUrl}
             prepTimeSeconds={currentQ.prepTimeSeconds || 25}
             recordingSeconds={currentQ.durationSeconds || 40}
             onRecordingComplete={(blob, transcript, duration) =>

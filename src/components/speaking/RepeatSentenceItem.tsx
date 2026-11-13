@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { SpeakingStatusBox, SpeakingState } from './SpeakingStatusBox';
 import { AudioRecorderEngine } from '../../services/audio/recorderEngine';
 import { SpeechRecognitionService } from '../../services/audio/speechRecognition';
+import { naturalSpeech } from '../../services/audio/naturalSpeechService';
 import { Volume2 } from 'lucide-react';
 
 export interface RepeatSentenceItemProps {
@@ -42,22 +43,15 @@ export const RepeatSentenceItem: React.FC<RepeatSentenceItemProps> = ({
         audio.pause();
         audio.src = '';
       }
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      naturalSpeech.cancel();
     };
   }, []);
 
   const fallbackTts = () => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(sentenceText);
-      utterance.rate = 0.95;
-      utterance.onend = () => onAudioFinished();
-      window.speechSynthesis.speak(utterance);
-    } else {
-      setTimeout(() => onAudioFinished(), 3000);
-    }
+    naturalSpeech.speak(sentenceText, {
+      onEnd: () => onAudioFinished(),
+      onError: () => onAudioFinished(),
+    });
   };
 
   const onAudioFinished = () => {

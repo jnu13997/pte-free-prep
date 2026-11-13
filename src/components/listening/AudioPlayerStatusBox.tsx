@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, Sparkles } from 'lucide-react';
 
 export type AudioPlayState = 'PREPARING' | 'PLAYING' | 'STOPPED';
 
@@ -23,9 +23,9 @@ export const AudioPlayerStatusBox: React.FC<AudioPlayerStatusBoxProps> = ({
       case 'PREPARING':
         return `Playing in ${secondsUntilPlay} seconds`;
       case 'PLAYING':
-        return 'Playing';
+        return 'Playing Audio Prompt';
       case 'STOPPED':
-        return 'Completed';
+        return 'Playback Completed';
       default:
         return 'Ready';
     }
@@ -34,10 +34,26 @@ export const AudioPlayerStatusBox: React.FC<AudioPlayerStatusBoxProps> = ({
   return (
     <div className="w-full max-w-xl mx-auto border border-pearson-borderGray rounded bg-white shadow-sm overflow-hidden select-none my-4">
       <div className="bg-[#e9ecef] px-4 py-2 border-b border-pearson-borderGray flex items-center justify-between">
-        <span className="font-bold text-sm text-gray-800">Audio Status</span>
-        <span className="text-xs font-semibold text-gray-600">
-          {status === 'PLAYING' ? 'LIVE AUDIO' : status}
-        </span>
+        <div className="flex items-center space-x-2">
+          <span className="font-bold text-sm text-gray-800">Audio Status</span>
+          <span className="inline-flex items-center text-[10px] bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded gap-1">
+            <Sparkles className="w-3 h-3 text-blue-600" />
+            Natural Studio Voice
+          </span>
+        </div>
+        <div className="flex items-center space-x-2">
+          {status === 'PLAYING' && (
+            <div className="flex items-end gap-0.5 h-3">
+              <span className="w-1 bg-pearson-blue rounded-full animate-pulse h-2" />
+              <span className="w-1 bg-pearson-blue rounded-full animate-pulse h-3.5" />
+              <span className="w-1 bg-pearson-blue rounded-full animate-pulse h-1.5" />
+              <span className="w-1 bg-pearson-blue rounded-full animate-pulse h-3" />
+            </div>
+          )}
+          <span className={`text-xs font-semibold ${status === 'PLAYING' ? 'text-pearson-blue font-bold' : 'text-gray-600'}`}>
+            {status === 'PLAYING' ? 'LIVE AUDIO' : status}
+          </span>
+        </div>
       </div>
 
       <div className="p-4 space-y-3">
@@ -74,7 +90,7 @@ export const AudioPlayerStatusBox: React.FC<AudioPlayerStatusBoxProps> = ({
         <div className="flex items-center justify-between pt-1 text-xs text-gray-600">
           <div className="flex items-center space-x-2">
             {volume === 0 ? <VolumeX className="w-4 h-4 text-gray-400" /> : <Volume2 className="w-4 h-4 text-gray-600" />}
-            <span>Volume</span>
+            <span>Prompt Volume</span>
           </div>
           <input
             type="range"

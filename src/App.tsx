@@ -9,12 +9,14 @@ import { evaluateSessionTask } from './services/scoring/deterministicScorer';
 import { computePteScores } from './services/scoring/crossSkillMatrix';
 import { GeminiScorerService } from './services/scoring/geminiScorer';
 import { UserExamResponse } from './services/exam/examRunnerState';
+import { AudioSettingsModal } from './components/layout/AudioSettingsModal';
 import {
   Sparkles,
   Key,
   BookOpen,
   CheckCircle2,
   ChevronRight,
+  Volume2,
 } from 'lucide-react';
 
 type AppView = 'HOME' | 'EXAM' | 'SCORE_REPORT' | 'LEARNING' | 'DRILL';
@@ -25,6 +27,7 @@ export const App: React.FC = () => {
   const [activeDrillQuestion, setActiveDrillQuestion] = useState<QuestionItem | null>(null);
   const [scoreReport, setScoreReport] = useState<PteScoreReport | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showAudioModal, setShowAudioModal] = useState(false);
   const [geminiApiKeyInput, setGeminiApiKeyInput] = useState(
     GeminiScorerService.getSavedApiKey() || ''
   );
@@ -198,8 +201,15 @@ export const App: React.FC = () => {
               Study Hub
             </button>
             <button
+              onClick={() => setShowAudioModal(true)}
+              className="flex items-center space-x-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 hover:text-white border border-blue-400/30 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer"
+            >
+              <Volume2 className="w-3.5 h-3.5" />
+              <span>Voice Settings</span>
+            </button>
+            <button
               onClick={() => setShowSettingsModal(true)}
-              className="flex items-center space-x-1.5 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-md text-xs font-semibold text-white transition-all"
+              className="flex items-center space-x-1.5 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-md text-xs font-semibold text-white transition-all cursor-pointer"
             >
               <Key className="w-3.5 h-3.5 text-amber-300" />
               <span>AI Scoring Key</span>
@@ -383,6 +393,12 @@ export const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Voice & Audio Settings Modal */}
+      <AudioSettingsModal
+        isOpen={showAudioModal}
+        onClose={() => setShowAudioModal(false)}
+      />
 
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 py-6 text-center text-xs text-gray-500 space-y-2 select-none">

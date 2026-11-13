@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AudioPlayerStatusBox, AudioPlayState } from './AudioPlayerStatusBox';
 import { playCountdownBeep } from '../../services/audio/beepSynthesizer';
+import { naturalSpeech } from '../../services/audio/naturalSpeechService';
 
 export interface SelectMissingWordItemProps {
   sentenceWithBeep: string;
@@ -34,9 +35,7 @@ export const SelectMissingWordItem: React.FC<SelectMissingWordItemProps> = ({
     }
     return () => {
       if (timer) clearTimeout(timer);
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      naturalSpeech.cancel();
     };
   }, [playState, secondsUntilPlay]);
 
@@ -50,8 +49,10 @@ export const SelectMissingWordItem: React.FC<SelectMissingWordItemProps> = ({
         }
       };
       audio.onended = () => {
-        setPlayState('STOPPED');
-        setProgressPercent(100);
+        playCountdownBeep(800, 500).then(() => {
+          setPlayState('STOPPED');
+          setProgressPercent(100);
+        });
       };
       audio.play().catch(() => fallbackTtsWithBeep());
     } else {
@@ -60,25 +61,19 @@ export const SelectMissingWordItem: React.FC<SelectMissingWordItemProps> = ({
   };
 
   const fallbackTtsWithBeep = () => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const spokenPart = sentenceWithBeep.replace(/\[beep\]/gi, '').trim();
-      const utterance = new SpeechSynthesisUtterance(spokenPart);
-      utterance.volume = volume;
-      utterance.rate = 0.95;
-      utterance.onend = () => {
+    naturalSpeech.speak(sentenceWithBeep, {
+      volume,
+      onEnd: () => {
         playCountdownBeep(800, 500).then(() => {
           setPlayState('STOPPED');
           setProgressPercent(100);
         });
-      };
-      window.speechSynthesis.speak(utterance);
-    } else {
-      setTimeout(() => {
+      },
+      onError: () => {
         setPlayState('STOPPED');
         setProgressPercent(100);
-      }, 5000);
-    }
+      },
+    });
   };
 
   return (

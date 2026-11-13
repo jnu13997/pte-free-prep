@@ -37,6 +37,7 @@ export const pteCoreMockQuestions: QuestionItem[] = [
     instructions: 'You will hear a sentence. Please repeat the sentence exactly as you hear it. You will hear the sentence only once.',
     durationSeconds: 15,
     promptText: 'The main campus library will extend its opening hours during the upcoming examination period.',
+    promptAudioUrl: './audio/prompts/core-rs-1.mp3',
   },
 
   // 4. Describe Image
@@ -64,6 +65,7 @@ export const pteCoreMockQuestions: QuestionItem[] = [
     durationSeconds: 40,
     passageText: 'You are travelling on a business trip to Vancouver. Your connecting flight has just been delayed by four hours due to adverse weather conditions, meaning you will miss an important evening dinner meeting with a key client.',
     promptText: 'Call your client. Explain the travel delay, apologize for the inconvenience, and suggest rescheduling the meeting for breakfast the following morning.',
+    promptAudioUrl: './audio/prompts/core-rts-1.mp3',
   },
 
   // 6. Answer Short Question
@@ -77,6 +79,7 @@ export const pteCoreMockQuestions: QuestionItem[] = [
     durationSeconds: 10,
     promptText: 'What document is issued by a vendor to a buyer requesting payment for goods or services supplied?',
     sampleAnswer: 'An invoice (or bill).',
+    promptAudioUrl: './audio/prompts/core-asq-1.mp3',
   },
 
   // 7. Summarize Written Text
@@ -187,6 +190,7 @@ export const pteCoreMockQuestions: QuestionItem[] = [
     instructions: 'You will hear a short lecture. Write a summary for a fellow student who was not present at the lecture. Write 50–70 words. You have 10 minutes.',
     durationSeconds: 600,
     promptText: 'Artificial intelligence diagnostic algorithms are demonstrating remarkable speed and accuracy in interpreting radiographic scans and MRI imaging. By rapidly scanning through tens of thousands of past pathology scans, machine learning models can identify micro-tumors and subtle vascular anomalies far earlier than standard manual evaluations. Nevertheless, clinical ethicists emphasize that AI should serve as an assistive decision-support tool rather than an autonomous replacement for trained medical physicians.',
+    promptAudioUrl: './audio/prompts/core-sst-1.mp3',
   },
 
   // 14. Highlight Incorrect Words
@@ -198,6 +202,7 @@ export const pteCoreMockQuestions: QuestionItem[] = [
     title: 'Highlight Incorrect Words - Climate Migration',
     instructions: 'You will hear a recording. Below is a transcript of the recording. Some words in the transcript differ from what the speaker said. Click on the words that are different.',
     transcript: 'Environmental economists observe that severe droughts are increasingly driving rural communities toward urban centers in search of agricultural stability.',
+    promptAudioUrl: './audio/prompts/core-hiw-1.mp3',
     incorrectWords: [
       { index: 2, originalWord: 'observe', spokenWord: 'conclude' },
       { index: 12, originalWord: 'agricultural', spokenWord: 'economic' },
@@ -213,6 +218,7 @@ export const pteCoreMockQuestions: QuestionItem[] = [
     title: 'Select Missing Word - Architectural Design',
     instructions: 'You will hear a recording about architecture. At the end of the recording the last word has been replaced by a beep. Select the correct option.',
     promptText: 'Sustainable architecture emphasizes building materials that reduce operational lifecycle emissions and foster long-term environmental [beep]',
+    promptAudioUrl: './audio/prompts/core-smw-1.mp3',
     options: [
       { id: 'opt-1', text: 'degradation' },
       { id: 'opt-2', text: 'sustainability', isCorrect: true },
@@ -230,5 +236,6 @@ export const pteCoreMockQuestions: QuestionItem[] = [
     title: 'Write from Dictation - Assignment Submission',
     instructions: 'You will hear a sentence. Type the sentence in the box below exactly as you hear it. You will hear the sentence only once.',
     promptText: 'All international applicants must submit their verified documentation before the priority deadline.',
+    promptAudioUrl: './audio/prompts/core-wfd-1.mp3',
   },
 ];
