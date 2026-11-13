@@ -91,6 +91,7 @@ export interface QuestionItem {
   promptText?: string;
   promptAudioUrl?: string;
   imageUrl?: string;
+  chartDescription?: string;
   // Specialized task attributes
   passageText?: string;
   options?: { id: string; text: string; isCorrect?: boolean }[];

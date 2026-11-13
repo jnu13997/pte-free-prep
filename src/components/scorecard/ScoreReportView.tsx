@@ -2,7 +2,7 @@ import React from 'react';
 import { PteScoreReport } from '../../types/exam';
 import { mapPteToClb } from '../../services/scoring/clbMapping';
 import { ClbBadge } from './ClbBadge';
-import { Award, RotateCcw, BookOpen, Printer, CheckCircle } from 'lucide-react';
+import { Award, RotateCcw, BookOpen, Printer } from 'lucide-react';
 
 export interface ScoreReportViewProps {
   report: PteScoreReport;

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { pteStrategyTemplates, PteTemplateItem } from '../../data/templates/pteTemplates';
 import { PteMode } from '../../types/exam';
-import { Copy, Check, BookOpen } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 
 export interface TemplateLibraryProps {
   currentMode: PteMode;
