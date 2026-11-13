@@ -48,6 +48,12 @@ export const AnswerShortQuestionItem: React.FC<AnswerShortQuestionItemProps> = (
         audio.src = '';
       }
       naturalSpeech.cancel();
+      if (recorderRef.current) {
+        recorderRef.current.stop();
+      }
+      if (speechRef.current) {
+        speechRef.current.stop();
+      }
     };
   }, []);
 

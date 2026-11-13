@@ -47,6 +47,12 @@ export const RepeatSentenceItem: React.FC<RepeatSentenceItemProps> = ({
         audio.src = '';
       }
       naturalSpeech.cancel();
+      if (recorderRef.current) {
+        recorderRef.current.stop();
+      }
+      if (speechRef.current) {
+        speechRef.current.stop();
+      }
     };
   }, []);
 

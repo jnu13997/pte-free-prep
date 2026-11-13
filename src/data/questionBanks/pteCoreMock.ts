@@ -103,6 +103,7 @@ export const pteCoreMockQuestions: QuestionItem[] = [
     title: 'Write an Email - Building Maintenance Complaint',
     instructions: 'Read the description of a situation below. Write an email to address the situation. You have 9 minutes. Write about 100 words (80–120 words).',
     durationSeconds: 540,
+    recipientContext: 'the building property manager',
     passageText: 'You live in an apartment complex where the building elevator has been out of service for over two weeks, causing severe difficulty for elderly residents and delivery personnel.',
     options: [
       { id: 'b1', text: 'Explain the ongoing issue and how it affects building occupants' },
@@ -119,7 +120,7 @@ export const pteCoreMockQuestions: QuestionItem[] = [
     section: 'READING',
     title: 'Reading & Writing: Fill in the Blanks - Renewable Technologies',
     instructions: 'Below is a text with blanks. Click on each blank, a list of choices will appear. Select the appropriate answer choice for each blank.',
-    passageText: 'Renewable energy infrastructure has undergone significant technological evolution over the past decade. Decreases in solar panel manufacturing costs have enabled widespread adoption across residential and commercial sectors. Furthermore, advancements in grid-scale battery storage now provide dependable backup power during intermittent generation intervals.',
+    passageText: 'Renewable energy infrastructure has undergone significant technological ___ over the past decade. Decreases in solar panel manufacturing costs have enabled ___ adoption across residential and commercial sectors. Furthermore, advancements in grid-scale battery storage now provide ___ backup power during intermittent generation intervals.',
     dropdownBlanks: [
       { index: 0, options: ['evolution', 'stagnation', 'deterioration', 'postponement'], correctIndex: 0 },
       { index: 1, options: ['widespread', 'occasional', 'reluctant', 'forbidden'], correctIndex: 0 },
@@ -152,7 +153,7 @@ export const pteCoreMockQuestions: QuestionItem[] = [
     section: 'READING',
     title: 'Reading: Fill in the Blanks - Ecosystem Restoration',
     instructions: 'In the text below some words are missing. Drag words from the box below to the appropriate place in the text.',
-    passageText: 'Forest conservation projects play an essential role in preserving biological diversity. Reforestation efforts not only sequester atmospheric carbon but also protect fragile soil layers from erosion. When native species are reintroduced, ecological equilibrium is steadily restored.',
+    passageText: 'Forest conservation projects play an essential role in preserving ___ diversity. Reforestation efforts not only ___ atmospheric carbon but also protect ___ soil layers from erosion. When native species are reintroduced, ecological ___ is steadily restored.',
     dragDropWords: ['biological', 'sequester', 'fragile', 'equilibrium', 'destructive', 'abandoned'],
     targetGaps: [
       { index: 0, correctWord: 'biological' },
@@ -205,7 +206,7 @@ export const pteCoreMockQuestions: QuestionItem[] = [
     promptAudioUrl: './audio/prompts/core-hiw-1.mp3',
     incorrectWords: [
       { index: 2, originalWord: 'observe', spokenWord: 'conclude' },
-      { index: 12, originalWord: 'agricultural', spokenWord: 'economic' },
+      { index: 17, originalWord: 'agricultural', spokenWord: 'economic' },
     ],
   },
 
@@ -227,7 +228,24 @@ export const pteCoreMockQuestions: QuestionItem[] = [
     ],
   },
 
-  // 16. Write from Dictation
+  // 16. Listening: Fill in the Blanks
+  {
+    id: 'core-lfib-1',
+    type: 'LISTENING_FILL_IN_BLANKS',
+    examMode: 'PTE_CORE',
+    section: 'LISTENING',
+    title: 'Listening: Fill in the Blanks - Renewable Energy',
+    instructions: 'You will hear a recording. Type the missing words in each blank.',
+    passageText: 'The transition toward clean energy requires substantial ___ in electric grid transmission. Engineers are deploying advanced sensors to optimize power ___ across continental corridors. These technological upgrades ensure long-term grid ___.',
+    transcript: 'The transition toward clean energy requires substantial investment in electric grid transmission. Engineers are deploying advanced sensors to optimize power distribution across continental corridors. These technological upgrades ensure long-term grid reliability.',
+    targetGaps: [
+      { index: 0, correctWord: 'investment' },
+      { index: 1, correctWord: 'distribution' },
+      { index: 2, correctWord: 'reliability' },
+    ],
+  },
+
+  // 17. Write from Dictation
   {
     id: 'core-wfd-1',
     type: 'WRITE_FROM_DICTATION',

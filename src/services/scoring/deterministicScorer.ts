@@ -151,6 +151,14 @@ export function evaluateSessionTask(
   };
 
   switch (question.type) {
+    case 'PERSONAL_INTRODUCTION': {
+      return {
+        ...base,
+        contentScore: 0,
+        maxContent: 0,
+      };
+    }
+
     case 'READ_ALOUD': {
       const scored = scoreReadAloud(question.promptText || '', response.transcript || '', response.durationSeconds || 20);
       return {
@@ -197,16 +205,28 @@ export function evaluateSessionTask(
     }
 
     case 'ANSWER_SHORT_QUESTION': {
-      const answer = (response.transcript || '').toLowerCase();
-      const expected = (question.sampleAnswer || '').toLowerCase();
-      const isCorrect = expected ? answer.includes(expected.split(' ')[0]) || expected.includes(answer.trim()) : answer.length > 0;
+      const answer = (response.transcript || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
+      const answerWords = new Set(answer.split(/\s+/).filter(Boolean));
+
+      const expectedRaw = (question.sampleAnswer || '').toLowerCase();
+      const stopWords = new Set(['a', 'an', 'the', 'or', 'and', 'in', 'of', 'to', 'for', 'is', 'it']);
+      const validKeywords = expectedRaw
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .map((w) => w.trim())
+        .filter((w) => w.length > 2 && !stopWords.has(w));
+
+      const isCorrect = validKeywords.length > 0
+        ? validKeywords.some((kw) => answerWords.has(kw) || answer.includes(kw))
+        : answerWords.size > 0;
+
       return {
         ...base,
         contentScore: isCorrect ? 1 : 0,
         maxContent: 1,
-        pronunciationScore: isCorrect ? 4 : 2,
+        pronunciationScore: isCorrect ? 5 : 2,
         maxPronunciation: 5,
-        fluencyScore: 4,
+        fluencyScore: isCorrect ? 5 : 3,
         maxFluency: 5,
       };
     }
@@ -341,7 +361,20 @@ export function evaluateSessionTask(
 
     case 'LISTENING_FILL_IN_BLANKS': {
       const blanks = response.blankValues || {};
-      // Count non-empty filled values as engagement
+      const targets = question.targetGaps || [];
+      if (targets.length > 0) {
+        let correct = 0;
+        targets.forEach((gap) => {
+          if (blanks[gap.index]?.toLowerCase().trim() === gap.correctWord.toLowerCase().trim()) {
+            correct++;
+          }
+        });
+        return {
+          ...base,
+          contentScore: correct,
+          maxContent: targets.length,
+        };
+      }
       const correctCount = Object.values(blanks).filter((v) => v && v.trim().length > 0).length;
       return {
         ...base,
@@ -368,14 +401,16 @@ export function evaluateSessionTask(
     case 'MULTIPLE_CHOICE_MULTIPLE_LISTENING': {
       const selectedIds = response.selectedOptionIds || [];
       const correctIds = (question.options || []).filter((o) => o.isCorrect).map((o) => o.id);
-      let earned = 0;
+      let correct = 0;
+      let incorrect = 0;
       selectedIds.forEach((id) => {
         if (correctIds.includes(id)) {
-          earned++;
+          correct++;
         } else {
-          earned = Math.max(0, earned - 1); // PTE partial credit with negative penalty
+          incorrect++;
         }
       });
+      const earned = Math.max(0, correct - incorrect);
       return {
         ...base,
         contentScore: earned,
@@ -386,14 +421,16 @@ export function evaluateSessionTask(
     case 'HIGHLIGHT_INCORRECT_WORDS': {
       const userClicks = response.highlightedIndices || [];
       const correctIndices = (question.incorrectWords || []).map((w) => w.index);
-      let score = 0;
+      let correct = 0;
+      let incorrect = 0;
       userClicks.forEach((idx) => {
         if (correctIndices.includes(idx)) {
-          score += 1;
+          correct++;
         } else {
-          score = Math.max(0, score - 1); // Negative marking for wrong clicks
+          incorrect++;
         }
       });
+      const score = Math.max(0, correct - incorrect);
       return {
         ...base,
         contentScore: score,

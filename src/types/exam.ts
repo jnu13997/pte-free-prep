@@ -104,5 +104,6 @@ export interface QuestionItem {
   incorrectWords?: { index: number; originalWord: string; spokenWord: string }[];
   minWords?: number;
   maxWords?: number;
+  recipientContext?: string;
   sampleAnswer?: string;
 }

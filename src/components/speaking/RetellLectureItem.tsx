@@ -52,6 +52,12 @@ export const RetellLectureItem: React.FC<RetellLectureItemProps> = ({
         audio.src = '';
       }
       naturalSpeech.cancel();
+      if (recorderRef.current) {
+        recorderRef.current.stop();
+      }
+      if (speechRef.current) {
+        speechRef.current.stop();
+      }
     };
   }, []);
 
@@ -176,8 +182,8 @@ export const RetellLectureItem: React.FC<RetellLectureItemProps> = ({
       </div>
 
       <SpeakingStatusBox
-        status={isPlayingLecture ? 'COUNTDOWN' : status}
-        secondsLeft={isPlayingLecture ? 0 : secondsLeft}
+        status={isPlayingLecture ? 'IDLE' : status}
+        secondsLeft={secondsLeft}
         volumeLevel={volumeLevel}
         totalRecordingSeconds={recordingSeconds}
         onSkipPrep={handleSkipPrep}

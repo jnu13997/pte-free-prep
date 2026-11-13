@@ -29,6 +29,17 @@ export const ReadAloudItem: React.FC<ReadAloudItemProps> = ({
   const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
+    return () => {
+      if (recorderRef.current) {
+        recorderRef.current.stop();
+      }
+      if (speechRef.current) {
+        speechRef.current.stop();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
 
     if (status === 'COUNTDOWN') {

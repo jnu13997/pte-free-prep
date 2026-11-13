@@ -8,6 +8,7 @@ import {
 } from '../../services/exam/examRunnerState';
 import { PearsonHeader } from '../layout/PearsonHeader';
 import { PearsonFooter } from '../layout/PearsonFooter';
+import { PersonalIntroductionItem } from '../speaking/PersonalIntroductionItem';
 import { ReadAloudItem } from '../speaking/ReadAloudItem';
 import { RepeatSentenceItem } from '../speaking/RepeatSentenceItem';
 import { DescribeImageItem } from '../speaking/DescribeImageItem';
@@ -141,8 +142,9 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
       <main className="flex-1 p-6 overflow-y-auto">
         {/* Speaking Tasks */}
         {currentQ.type === 'PERSONAL_INTRODUCTION' && (
-          <ReadAloudItem
-            passageText={currentQ.promptText || ''}
+          <PersonalIntroductionItem
+            key={currentQ.id}
+            promptText={currentQ.promptText || ''}
             prepTimeSeconds={currentQ.prepTimeSeconds || 25}
             recordingSeconds={currentQ.durationSeconds || 30}
             onTranscriptUpdate={(transcript) =>
@@ -162,6 +164,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
         {currentQ.type === 'READ_ALOUD' && (
           <ReadAloudItem
+            key={currentQ.id}
             passageText={currentQ.promptText || ''}
             prepTimeSeconds={currentQ.prepTimeSeconds || 35}
             recordingSeconds={currentQ.durationSeconds || 40}
@@ -182,6 +185,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
         {currentQ.type === 'REPEAT_SENTENCE' && (
           <RepeatSentenceItem
+            key={currentQ.id}
             sentenceText={currentQ.promptText || ''}
             audioPromptUrl={currentQ.promptAudioUrl}
             recordingSeconds={currentQ.durationSeconds || 15}
@@ -202,6 +206,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
         {currentQ.type === 'DESCRIBE_IMAGE' && (
           <DescribeImageItem
+            key={currentQ.id}
             imageUrl={currentQ.imageUrl}
             chartDescription={currentQ.chartDescription}
             prepTimeSeconds={currentQ.prepTimeSeconds || 25}
@@ -223,6 +228,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
         {currentQ.type === 'RESPOND_TO_SITUATION' && (
           <RespondToSituationItem
+            key={currentQ.id}
             situationText={currentQ.passageText || ''}
             rolePrompt={currentQ.promptText || ''}
             audioPromptUrl={currentQ.promptAudioUrl}
@@ -245,6 +251,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
         {currentQ.type === 'RETELL_LECTURE' && (
           <RetellLectureItem
+            key={currentQ.id}
             lectureText={currentQ.promptText || ''}
             audioPromptUrl={currentQ.promptAudioUrl}
             imageUrl={currentQ.imageUrl}
@@ -267,6 +274,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
         {currentQ.type === 'ANSWER_SHORT_QUESTION' && (
           <AnswerShortQuestionItem
+            key={currentQ.id}
             questionText={currentQ.promptText || ''}
             audioPromptUrl={currentQ.promptAudioUrl}
             recordingSeconds={currentQ.durationSeconds || 10}
@@ -288,6 +296,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
         {/* Writing Tasks */}
         {currentQ.type === 'SUMMARIZE_WRITTEN_TEXT' && (
           <SummarizeWrittenTextItem
+            key={currentQ.id}
             passageText={currentQ.passageText || ''}
             value={currentResponse.writtenText || ''}
             onChange={(val) => setCurrentResponse({ taskId: currentQ.id, writtenText: val })}
@@ -296,9 +305,10 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
         {currentQ.type === 'WRITE_EMAIL' && (
           <WriteEmailItem
+            key={currentQ.id}
             scenarioText={currentQ.passageText || ''}
             bulletPoints={currentQ.options?.map((o) => o.text) || []}
-            recipientContext="the property manager"
+            recipientContext={currentQ.recipientContext || 'the recipient'}
             value={currentResponse.writtenText || ''}
             onChange={(val) => setCurrentResponse({ taskId: currentQ.id, writtenText: val })}
           />
@@ -306,6 +316,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
         {currentQ.type === 'WRITE_ESSAY' && (
           <WriteEssayItem
+            key={currentQ.id}
             essayTopic={currentQ.promptText || ''}
             value={currentResponse.writtenText || ''}
             onChange={(val) => setCurrentResponse({ taskId: currentQ.id, writtenText: val })}
@@ -315,6 +326,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
         {/* Reading Tasks */}
         {currentQ.type === 'READING_WRITING_FILL_IN_BLANKS' && (
           <ReadingWritingBlanksItem
+            key={currentQ.id}
             passageSegments={(currentQ.passageText || '').split('___')}
             dropdownBlanks={currentQ.dropdownBlanks || []}
             selectedValues={currentResponse.dropdownSelections || {}}
@@ -330,6 +342,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
         {currentQ.type === 'REORDER_PARAGRAPHS' && (
           <ReorderParagraphsItem
+            key={currentQ.id}
             paragraphs={currentQ.scrambledParagraphs || []}
             onChange={(orderedIds) =>
               setCurrentResponse({ taskId: currentQ.id, reorderedIds: orderedIds })
@@ -339,6 +352,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
         {currentQ.type === 'READING_FILL_IN_BLANKS' && (
           <ReadingBlanksDragDropItem
+            key={currentQ.id}
             passageSegments={(currentQ.passageText || '').split('___')}
             wordBank={currentQ.dragDropWords || []}
             assignedWords={currentResponse.blankValues || {}}
@@ -361,6 +375,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
         {currentQ.type === 'MULTIPLE_CHOICE_SINGLE_READING' && (
           <ReadingMcqItem
+            key={currentQ.id}
             passageText={currentQ.passageText || ''}
             questionText={currentQ.promptText || ''}
             options={currentQ.options || []}
@@ -372,6 +387,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
         {currentQ.type === 'MULTIPLE_CHOICE_MULTIPLE_READING' && (
           <ReadingMcqItem
+            key={currentQ.id}
             passageText={currentQ.passageText || ''}
             questionText={currentQ.promptText || ''}
             options={currentQ.options || []}
@@ -384,6 +400,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
         {/* Listening Tasks */}
         {currentQ.type === 'SUMMARIZE_SPOKEN_TEXT' && (
           <SummarizeSpokenTextItem
+            key={currentQ.id}
             spokenPromptText={currentQ.promptText || ''}
             audioPromptUrl={currentQ.promptAudioUrl}
             value={currentResponse.writtenText || ''}
@@ -393,6 +410,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
         {currentQ.type === 'WRITE_FROM_DICTATION' && (
           <WriteFromDictationItem
+            key={currentQ.id}
             sentencePrompt={currentQ.promptText || ''}
             audioPromptUrl={currentQ.promptAudioUrl}
             value={currentResponse.writtenText || ''}
@@ -402,8 +420,10 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
         {currentQ.type === 'HIGHLIGHT_INCORRECT_WORDS' && (
           <HighlightIncorrectWordsItem
+            key={currentQ.id}
             transcript={currentQ.transcript || ''}
             audioPromptUrl={currentQ.promptAudioUrl}
+            incorrectWords={currentQ.incorrectWords}
             highlightedIndices={currentResponse.highlightedIndices || []}
             onChange={(indices) =>
               setCurrentResponse({ taskId: currentQ.id, highlightedIndices: indices })
@@ -413,6 +433,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
         {currentQ.type === 'SELECT_MISSING_WORD' && (
           <SelectMissingWordItem
+            key={currentQ.id}
             sentenceWithBeep={currentQ.promptText || ''}
             audioPromptUrl={currentQ.promptAudioUrl}
             options={currentQ.options || []}
@@ -423,6 +444,7 @@ export const ExamRunner: React.FC<ExamRunnerProps> = ({
 
         {currentQ.type === 'LISTENING_FILL_IN_BLANKS' && (
           <ListeningBlanksItem
+            key={currentQ.id}
             passageSegments={(currentQ.passageText || '').split('___')}
             audioPromptUrl={currentQ.promptAudioUrl}
             transcriptForFallback={currentQ.transcript}

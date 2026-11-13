@@ -91,6 +91,11 @@ export function createExamSession(examMode: PteMode, questions: QuestionItem[]):
   };
 }
 
+export function isTaskPooledSection(q?: QuestionItem): boolean {
+  if (!q) return false;
+  return q.section === 'READING' || (q.section === 'LISTENING' && q.type !== 'SUMMARIZE_SPOKEN_TEXT');
+}
+
 export function advanceQuestion(
   session: ExamSession,
   response: UserExamResponse
@@ -109,15 +114,17 @@ export function advanceQuestion(
     };
   }
 
+  const currentQ = session.questions[session.currentQuestionIndex];
   const nextQuestion = session.questions[nextIndex];
   const isSameSection = nextQuestion.section === session.currentSection;
-  const isPooledSection = nextQuestion.section === 'READING' || nextQuestion.section === 'LISTENING';
+  const isCurrentlyPooled = isTaskPooledSection(currentQ);
+  const isNextPooled = isTaskPooledSection(nextQuestion);
 
+  // Time remaining is ONLY pooled if both current and next questions belong to the pooled pool
+  // (Prevents individually timed items like SUMMARIZE_SPOKEN_TEXT from bleeding into pooled listening)
   const timeRemainingSeconds =
-    isSameSection && isPooledSection
+    isSameSection && isCurrentlyPooled && isNextPooled
       ? session.timeRemainingSeconds
-      : isPooledSection && nextQuestion.durationSeconds
-      ? nextQuestion.durationSeconds
       : calculateAllocatedTimeForQuestion(nextQuestion);
 
   return {

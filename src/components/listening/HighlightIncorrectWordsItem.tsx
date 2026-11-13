@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AudioPlayerStatusBox, AudioPlayState } from './AudioPlayerStatusBox';
 import { naturalSpeech } from '../../services/audio/naturalSpeechService';
 
 export interface HighlightIncorrectWordsItemProps {
   transcript: string;
   audioPromptUrl?: string;
+  incorrectWords?: { index: number; originalWord: string; spokenWord: string }[];
   highlightedIndices: number[];
   onChange: (indices: number[]) => void;
 }
@@ -12,6 +13,7 @@ export interface HighlightIncorrectWordsItemProps {
 export const HighlightIncorrectWordsItem: React.FC<HighlightIncorrectWordsItemProps> = ({
   transcript,
   audioPromptUrl,
+  incorrectWords,
   highlightedIndices,
   onChange,
 }) => {
@@ -19,6 +21,7 @@ export const HighlightIncorrectWordsItem: React.FC<HighlightIncorrectWordsItemPr
   const [secondsUntilPlay, setSecondsUntilPlay] = useState(7);
   const [progressPercent, setProgressPercent] = useState(0);
   const [volume, setVolume] = useState(0.8);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const words = transcript.split(/\s+/).filter(Boolean);
 
@@ -34,6 +37,10 @@ export const HighlightIncorrectWordsItem: React.FC<HighlightIncorrectWordsItemPr
     }
     return () => {
       if (timer) clearTimeout(timer);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
       naturalSpeech.cancel();
     };
   }, [playState, secondsUntilPlay]);
@@ -41,6 +48,7 @@ export const HighlightIncorrectWordsItem: React.FC<HighlightIncorrectWordsItemPr
   const startAudioPlayback = () => {
     if (audioPromptUrl) {
       const audio = new Audio(audioPromptUrl);
+      audioRef.current = audio;
       audio.volume = volume;
       audio.ontimeupdate = () => {
         if (audio.duration) {
@@ -58,7 +66,18 @@ export const HighlightIncorrectWordsItem: React.FC<HighlightIncorrectWordsItemPr
   };
 
   const fallbackTts = () => {
-    naturalSpeech.speak(transcript, {
+    let spokenText = transcript;
+    if (incorrectWords && incorrectWords.length > 0) {
+      const wordsList = transcript.split(/\s+/);
+      incorrectWords.forEach((item) => {
+        if (item.index >= 0 && item.index < wordsList.length) {
+          wordsList[item.index] = item.spokenWord;
+        }
+      });
+      spokenText = wordsList.join(' ');
+    }
+
+    naturalSpeech.speak(spokenText, {
       volume,
       onEnd: () => {
         setPlayState('STOPPED');

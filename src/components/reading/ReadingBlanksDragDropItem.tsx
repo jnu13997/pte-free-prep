@@ -60,6 +60,18 @@ export const ReadingBlanksDragDropItem: React.FC<ReadingBlanksDragDropItemProps>
                 <button
                   type="button"
                   onClick={() => handleGapClick(idx)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const droppedWord = e.dataTransfer.getData('text/plain');
+                    if (droppedWord) {
+                      onAssign(idx, droppedWord);
+                      setSelectedWord(null);
+                    }
+                  }}
                   className={`inline-block mx-1.5 px-3 py-1 min-w-[90px] border-2 border-dashed rounded text-sm font-semibold transition-all align-middle select-none ${
                     assigned
                       ? 'border-pearson-blue bg-blue-50 text-blue-900 shadow-xs'
@@ -86,8 +98,12 @@ export const ReadingBlanksDragDropItem: React.FC<ReadingBlanksDragDropItemProps>
             <button
               key={wIdx}
               type="button"
+              draggable={true}
+              onDragStart={(e) => {
+                e.dataTransfer.setData('text/plain', word);
+              }}
               onClick={() => handleWordSelect(word)}
-              className={`px-3.5 py-1.5 rounded border text-sm font-semibold cursor-pointer transition-all shadow-xs ${
+              className={`px-3.5 py-1.5 rounded border text-sm font-semibold cursor-grab active:cursor-grabbing transition-all shadow-xs ${
                 selectedWord === word
                   ? 'border-pearson-blue bg-pearson-blue text-white shadow-md'
                   : 'border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-800'

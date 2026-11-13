@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AudioPlayerStatusBox, AudioPlayState } from './AudioPlayerStatusBox';
 import { playCountdownBeep } from '../../services/audio/beepSynthesizer';
 import { naturalSpeech } from '../../services/audio/naturalSpeechService';
@@ -22,6 +22,7 @@ export const SelectMissingWordItem: React.FC<SelectMissingWordItemProps> = ({
   const [secondsUntilPlay, setSecondsUntilPlay] = useState(7);
   const [progressPercent, setProgressPercent] = useState(0);
   const [volume, setVolume] = useState(0.85);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -35,6 +36,10 @@ export const SelectMissingWordItem: React.FC<SelectMissingWordItemProps> = ({
     }
     return () => {
       if (timer) clearTimeout(timer);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
       naturalSpeech.cancel();
     };
   }, [playState, secondsUntilPlay]);
@@ -42,6 +47,7 @@ export const SelectMissingWordItem: React.FC<SelectMissingWordItemProps> = ({
   const startAudioPlayback = () => {
     if (audioPromptUrl) {
       const audio = new Audio(audioPromptUrl);
+      audioRef.current = audio;
       audio.volume = volume;
       audio.ontimeupdate = () => {
         if (audio.duration) {
@@ -61,7 +67,10 @@ export const SelectMissingWordItem: React.FC<SelectMissingWordItemProps> = ({
   };
 
   const fallbackTtsWithBeep = () => {
-    naturalSpeech.speak(sentenceWithBeep, {
+    // Strip out literal "[beep]" so the natural voice doesn't vocalize the word "beep"
+    const cleanSentence = sentenceWithBeep.replace(/\[\s*beep\s*\]/gi, '').trim();
+
+    naturalSpeech.speak(cleanSentence, {
       volume,
       onEnd: () => {
         playCountdownBeep(800, 500).then(() => {

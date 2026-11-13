@@ -52,6 +52,12 @@ export const RespondToSituationItem: React.FC<RespondToSituationItemProps> = ({
         audio.src = '';
       }
       naturalSpeech.cancel();
+      if (recorderRef.current) {
+        recorderRef.current.stop();
+      }
+      if (speechRef.current) {
+        speechRef.current.stop();
+      }
     };
   }, []);
 
@@ -179,8 +185,8 @@ export const RespondToSituationItem: React.FC<RespondToSituationItemProps> = ({
       </div>
 
       <SpeakingStatusBox
-        status={isPlayingAudio ? 'COUNTDOWN' : status}
-        secondsLeft={isPlayingAudio ? 0 : secondsLeft}
+        status={isPlayingAudio ? 'IDLE' : status}
+        secondsLeft={secondsLeft}
         volumeLevel={volumeLevel}
         totalRecordingSeconds={recordingSeconds}
         onSkipPrep={handleSkipPrep}

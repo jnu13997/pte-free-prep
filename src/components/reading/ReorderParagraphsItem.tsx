@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowRight, ArrowLeft, ArrowUp, ArrowDown } from 'lucide-react';
 
 export interface Paragraph {
@@ -19,6 +19,13 @@ export const ReorderParagraphsItem: React.FC<ReorderParagraphsItemProps> = ({
   const [targetList, setTargetList] = useState<Paragraph[]>([]);
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSourceList(paragraphs);
+    setTargetList([]);
+    setSelectedSourceId(null);
+    setSelectedTargetId(null);
+  }, [paragraphs]);
 
   const moveRight = () => {
     if (!selectedSourceId) return;

@@ -82,7 +82,70 @@ export const pteAcademicMockQuestions: QuestionItem[] = [
     correctParagraphOrder: ['acad-ro-1', 'acad-ro-2', 'acad-ro-3', 'acad-ro-4'],
   },
 
-  // 7. Write from Dictation
+  // 7. Reading & Writing: Fill in the Blanks
+  {
+    id: 'acad-rwfib-1',
+    type: 'READING_WRITING_FILL_IN_BLANKS',
+    examMode: 'PTE_ACADEMIC',
+    section: 'READING',
+    title: 'Reading & Writing: Fill in the Blanks - Astrophysics',
+    instructions: 'Below is a text with blanks. Click on each blank, a list of choices will appear. Select the appropriate answer choice for each blank.',
+    passageText: 'Gravitational wave astronomy has provided researchers with novel insights into stellar evolution. Detectors such as LIGO have recorded signals from binary black hole ___ with exceptional sensitivity. These empirical observations confirm long-standing predictions postulated in Einstein\'s general theory of relativity, while simultaneously ___ new avenues for observing previously undetectable cosmic events. Further instrumentation upgrades are expected to significantly ___ our observational event horizon.',
+    dropdownBlanks: [
+      { index: 0, options: ['mergers', 'collisions', 'divergences', 'suspensions'], correctIndex: 0 },
+      { index: 1, options: ['opening', 'terminating', 'restricting', 'distorting'], correctIndex: 0 },
+      { index: 2, options: ['expand', 'compress', 'obstruct', 'terminate'], correctIndex: 0 },
+    ],
+  },
+
+  // 8. Reading: Fill in the Blanks (Drag & Drop)
+  {
+    id: 'acad-rfib-1',
+    type: 'READING_FILL_IN_BLANKS',
+    examMode: 'PTE_ACADEMIC',
+    section: 'READING',
+    title: 'Reading: Fill in the Blanks - Paleoclimatology',
+    instructions: 'In the text below some words are missing. Drag words from the box below to the appropriate place in the text.',
+    passageText: 'Ice core samples extracted from the Antarctic ice sheet offer invaluable ___ into historical atmospheric composition. Trapped gas bubbles allow geochemists to reconstruct past temperature ___ over hundreds of millennia. By establishing these ancient baseline measurements, climatologists can more accurately evaluate the velocity of modern anthropogenic climate ___.',
+    dragDropWords: ['insights', 'fluctuations', 'change', 'illusions', 'stability', 'evaporation'],
+    targetGaps: [
+      { index: 0, correctWord: 'insights' },
+      { index: 1, correctWord: 'fluctuations' },
+      { index: 2, correctWord: 'change' },
+    ],
+  },
+
+  // 9. Answer Short Question
+  {
+    id: 'acad-asq-1',
+    type: 'ANSWER_SHORT_QUESTION',
+    examMode: 'PTE_ACADEMIC',
+    section: 'SPEAKING_WRITING',
+    title: 'Answer Short Question - Economics',
+    instructions: 'You will hear a question. Please give a simple and short answer. Often just one or a few words is enough.',
+    durationSeconds: 10,
+    promptText: 'What term describes an economic system where prices are determined by unrestricted competition between privately owned businesses?',
+    sampleAnswer: 'free market or market economy',
+  },
+
+  // 10. Listening: Fill in the Blanks
+  {
+    id: 'acad-lfib-1',
+    type: 'LISTENING_FILL_IN_BLANKS',
+    examMode: 'PTE_ACADEMIC',
+    section: 'LISTENING',
+    title: 'Listening: Fill in the Blanks - Cellular Metabolism',
+    instructions: 'You will hear a recording. Type the missing words in each blank.',
+    passageText: 'Mitochondrial organelles convert dietary nutrients into cellular ___ through oxidative phosphorylation. Enzymatic complexes facilitate chemical reactions that generate metabolic ___. When cellular stress occurs, apoptosis pathways are ___ activated.',
+    transcript: 'Mitochondrial organelles convert dietary nutrients into cellular energy through oxidative phosphorylation. Enzymatic complexes facilitate chemical reactions that generate metabolic intermediates. When cellular stress occurs, apoptosis pathways are subsequently activated.',
+    targetGaps: [
+      { index: 0, correctWord: 'energy' },
+      { index: 1, correctWord: 'intermediates' },
+      { index: 2, correctWord: 'subsequently' },
+    ],
+  },
+
+  // 11. Write from Dictation
   {
     id: 'acad-wfd-1',
     type: 'WRITE_FROM_DICTATION',

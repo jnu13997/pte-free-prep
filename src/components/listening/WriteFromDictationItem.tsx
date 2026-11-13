@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AudioPlayerStatusBox, AudioPlayState } from './AudioPlayerStatusBox';
 import { naturalSpeech } from '../../services/audio/naturalSpeechService';
 
@@ -19,6 +19,7 @@ export const WriteFromDictationItem: React.FC<WriteFromDictationItemProps> = ({
   const [secondsUntilPlay, setSecondsUntilPlay] = useState(7);
   const [progressPercent, setProgressPercent] = useState(0);
   const [volume, setVolume] = useState(0.85);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -32,6 +33,10 @@ export const WriteFromDictationItem: React.FC<WriteFromDictationItemProps> = ({
     }
     return () => {
       if (timer) clearTimeout(timer);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
       naturalSpeech.cancel();
     };
   }, [playState, secondsUntilPlay]);
@@ -39,6 +44,7 @@ export const WriteFromDictationItem: React.FC<WriteFromDictationItemProps> = ({
   const startAudioPlayback = () => {
     if (audioPromptUrl) {
       const audio = new Audio(audioPromptUrl);
+      audioRef.current = audio;
       audio.volume = volume;
       audio.ontimeupdate = () => {
         if (audio.duration) {

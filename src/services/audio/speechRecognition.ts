@@ -34,6 +34,7 @@ export class SpeechRecognitionService {
   private recognition: SpeechRecognitionInstance | null = null;
   private isListening = false;
   private currentTranscript = '';
+  private lastInterim = '';
 
   static isSupported(): boolean {
     return typeof window !== 'undefined' && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -58,6 +59,7 @@ export class SpeechRecognitionService {
       this.recognition.interimResults = true;
       this.recognition.lang = 'en-US';
       this.currentTranscript = '';
+      this.lastInterim = '';
 
       this.recognition.onresult = (event: SpeechRecognitionEvent) => {
         let interim = '';
@@ -65,11 +67,13 @@ export class SpeechRecognitionService {
           const item = event.results[i];
           if (item.isFinal) {
             this.currentTranscript += (this.currentTranscript ? ' ' : '') + item[0].transcript.trim();
+            this.lastInterim = '';
             onFinal(this.currentTranscript);
           } else {
             interim += item[0].transcript;
           }
         }
+        this.lastInterim = interim.trim();
         onInterim(interim);
       };
 
@@ -81,6 +85,10 @@ export class SpeechRecognitionService {
 
       this.recognition.onend = () => {
         this.isListening = false;
+        if (this.lastInterim && !this.currentTranscript.endsWith(this.lastInterim)) {
+          this.currentTranscript += (this.currentTranscript ? ' ' : '') + this.lastInterim;
+          this.lastInterim = '';
+        }
         onFinal(this.currentTranscript);
       };
 
@@ -101,6 +109,10 @@ export class SpeechRecognitionService {
         // ignore
       }
       this.isListening = false;
+    }
+    if (this.lastInterim && !this.currentTranscript.endsWith(this.lastInterim)) {
+      this.currentTranscript += (this.currentTranscript ? ' ' : '') + this.lastInterim;
+      this.lastInterim = '';
     }
     return this.currentTranscript;
   }
